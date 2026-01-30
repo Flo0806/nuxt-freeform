@@ -14,8 +14,8 @@ export default defineNuxtModule<ModuleOptions>({
 
     // Auto-import components
     addComponent({
-      name: 'Freeform',
-      filePath: resolver.resolve('./runtime/components/Freeform.vue'),
+      name: 'TheFreeform',
+      filePath: resolver.resolve('./runtime/components/TheFreeform.vue'),
     })
     addComponent({
       name: 'FreeformItem',

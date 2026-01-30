@@ -32,7 +32,7 @@ function onSelect(selectedItems: FreeformItemData[]) {
       <small>Click to select, Ctrl/Cmd+Click for multi-select</small>
     </p>
 
-    <Freeform
+    <TheFreeform
       v-model="items"
       class="grid grid-cols-4 gap-4"
       @select="onSelect"
@@ -52,6 +52,6 @@ function onSelect(selectedItems: FreeformItemData[]) {
           </div>
         </template>
       </FreeformItem>
-    </Freeform>
+    </TheFreeform>
   </div>
 </template>
