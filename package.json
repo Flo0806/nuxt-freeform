@@ -70,6 +70,7 @@
     "@nuxt/schema": "^4.3.0",
     "@nuxt/test-utils": "^3.23.0",
     "@types/node": "latest",
+    "@unocss/nuxt": "^66.6.0",
     "changelogen": "^0.6.2",
     "eslint": "^9.39.2",
     "nuxt": "^4.3.0",
