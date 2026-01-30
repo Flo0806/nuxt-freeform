@@ -1,5 +1,5 @@
 export default defineNuxtConfig({
-  modules: ['my-module'],
+  modules: ['nuxt-freeform'],
   devtools: { enabled: true },
   compatibilityDate: 'latest',
   myModule: {},
