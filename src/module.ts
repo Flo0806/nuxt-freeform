@@ -1,6 +1,6 @@
-import { defineNuxtModule, addPlugin, createResolver } from '@nuxt/kit'
+import { defineNuxtModule, addComponent, addImports, createResolver } from '@nuxt/kit'
 
-// Module options TypeScript interface definition
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ModuleOptions {}
 
 export default defineNuxtModule<ModuleOptions>({
@@ -8,12 +8,24 @@ export default defineNuxtModule<ModuleOptions>({
     name: 'nuxt-freeform',
     configKey: 'nuxtFreeform',
   },
-  // Default configuration options of the Nuxt module
   defaults: {},
   setup(_options, _nuxt) {
     const resolver = createResolver(import.meta.url)
 
-    // Do not add the extension since the `.ts` will be transpiled to `.mjs` after `npm run prepack`
-    addPlugin(resolver.resolve('./runtime/plugin'))
+    // Auto-import components
+    addComponent({
+      name: 'Freeform',
+      filePath: resolver.resolve('./runtime/components/Freeform.vue'),
+    })
+    addComponent({
+      name: 'FreeformItem',
+      filePath: resolver.resolve('./runtime/components/FreeformItem.vue'),
+    })
+
+    // Auto-import composables
+    addImports({
+      name: 'useFreeformContext',
+      from: resolver.resolve('./runtime/composables/useFreeform'),
+    })
   },
 })
