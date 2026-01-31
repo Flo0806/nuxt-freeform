@@ -93,26 +93,7 @@ function onClick(event: MouseEvent) {
   context.select(props.item)
 }
 
-// Container drop zone handling via mouse events (not continuous bounds checks)
-function onMouseEnter() {
-  if (!isContainer.value) return
-  if (!context.dragState.value.thresholdPassed) return
-
-  // Don't drop on self
-  const draggedIds = new Set(context.dragState.value.items.map(i => i.id))
-  if (draggedIds.has(props.item.id)) return
-
-  context.setDropTarget(props.item, props.accept)
-}
-
-function onMouseLeave() {
-  if (!isContainer.value) return
-
-  // Only clear if we are the current target
-  if (context.currentDropTarget.value?.item?.id === props.item.id) {
-    context.clearDropTarget()
-  }
-}
+// Note: Container drop detection is now handled centrally in useFreeform.ts
 </script>
 
 <template>
@@ -134,8 +115,6 @@ function onMouseLeave() {
     :data-visual-index="visualIndex"
     @pointerdown="onPointerDown"
     @click="onClick"
-    @mouseenter="onMouseEnter"
-    @mouseleave="onMouseLeave"
   >
     <slot
       :item="item"

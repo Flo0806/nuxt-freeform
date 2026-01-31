@@ -4,12 +4,13 @@ import { useFreeformContext, getPlaceholderPosition } from '../composables/useFr
 
 const context = useFreeformContext()
 
-// Show placeholder only when dragging and not dropping into a container
+// Show placeholder when dragging
 const isVisible = computed(() => {
   return (
     context.dragState.value.thresholdPassed
     && context.dropIndex.value !== null
-    && !context.currentDropTarget.value
+    // Keep placeholder visible even over containers - hiding it shifts layout and causes bugs
+    // && !context.currentDropTarget.value
   )
 })
 

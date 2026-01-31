@@ -233,6 +233,29 @@ export function createFreeformContext() {
   function handlePointerMove(event: PointerEvent) {
     if (!dragState.value.active || !dragState.value.startPosition) return
 
+    // Check if cursor is inside any container
+    let inContainer = false
+    for (const [id, entry] of dropZones) {
+      if (!entry.item) continue
+      if (dragState.value.items.some(i => i.id === id)) continue // skip if dragging this container
+      const rect = entry.element.getBoundingClientRect()
+      if (event.clientX >= (rect.left + 20) && event.clientX <= (rect.right - 20)
+        && event.clientY >= rect.top && event.clientY <= rect.bottom) {
+        const accepted = entry.accept ? entry.accept(dragState.value.items) : true
+        currentDropTarget.value = {
+          item: entry.item,
+          bounds: domRectToRect(rect),
+          type: 'container',
+          accepted,
+        }
+        inContainer = true
+        break
+      }
+    }
+    if (!inContainer && currentDropTarget.value) {
+      currentDropTarget.value = null
+    }
+
     const currentPosition: Position = { x: event.clientX, y: event.clientY }
 
     // Check threshold before starting visual drag

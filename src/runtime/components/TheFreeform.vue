@@ -7,8 +7,11 @@ import { createFreeformContext } from '../composables/useFreeform'
 const props = withDefaults(defineProps<{
   modelValue: FreeformItemData[]
   disabled?: boolean
+  /** If true, reorder is not applied automatically. User must handle @reorder event manually. */
+  manualReorder?: boolean
 }>(), {
   disabled: false,
+  manualReorder: false,
 })
 
 const emit = defineEmits<{
@@ -144,9 +147,14 @@ function onPointerUp(event: PointerEvent) {
     else {
       const to = dropIndex.value
       if (to !== null && draggedItems.length > 0) {
-        const newItems = reorderItems(draggedItems, to)
-        items.value = newItems
-        emit('update:modelValue', newItems)
+        // Auto-reorder unless manualReorder is enabled
+        if (!props.manualReorder) {
+          const newItems = reorderItems(draggedItems, to)
+          items.value = newItems
+          emit('update:modelValue', newItems)
+        }
+
+        // Always emit events so user can handle manually if needed
         emit('reorder', dragSourceIndex.value ?? 0, to)
         emit('drop', {
           items: draggedItems,
