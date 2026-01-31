@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch, onMounted, onUnmounted, computed, inject, useAttrs } from 'vue'
+import { watch, onMounted, onUnmounted, computed, inject } from 'vue'
 import type { FreeformItemData, DropEventPayload } from '../types'
 import { SELECTION_CONTEXT_KEY } from '../types'
 import { createFreeformContext } from '../composables/useFreeform'
@@ -61,10 +61,6 @@ watch(() => props.disabled, (val) => {
   contextDisabled.value = val
 }, { immediate: true })
 
-// Check if drag-move listener is bound (optimization)
-const attrs = useAttrs()
-const hasDragMoveListener = computed(() => 'onDrag-move' in attrs || 'onDragMove' in attrs)
-
 // Emit select event
 watch(() => selectionState.value.items, (selected) => {
   emit('select', [...selected])
@@ -77,9 +73,8 @@ watch(() => dragState.value.thresholdPassed, (passed) => {
   }
 })
 
-// Emit drag-move event (only if listener is bound)
+// Emit drag-move event
 watch(() => dragState.value.currentPosition, (pos) => {
-  if (!hasDragMoveListener.value) return
   if (dragState.value.thresholdPassed && pos) {
     emit('drag-move', [...dragState.value.items], { ...pos })
   }

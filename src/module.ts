@@ -39,5 +39,9 @@ export default defineNuxtModule<ModuleOptions>({
       name: 'useFreeformContext',
       from: resolver.resolve('./runtime/composables/useFreeform'),
     })
+    addImports({
+      name: 'useAutoScroll',
+      from: resolver.resolve('./runtime/composables/useAutoScroll'),
+    })
   },
 })
