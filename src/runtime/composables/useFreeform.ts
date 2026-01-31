@@ -158,6 +158,7 @@ function findDropIndexInRow(row: VisibleItem[], positionX: number): number | nul
 export function createFreeformContext() {
   const itemElements = new Map<string, HTMLElement>()
   const dropZones = new Map<string, DropZoneEntry>()
+  const containerElement = ref<HTMLElement | null>(null)
   const items = ref<FreeformItemData[]>([])
   const disabled = ref(false)
   const dropIndex = ref<number | null>(null)
@@ -362,10 +363,20 @@ export function createFreeformContext() {
     return null
   }
 
+  function isInsideContainer(position: Position): boolean {
+    if (!containerElement.value) return true // No container = always inside (fallback)
+    const rect = containerElement.value.getBoundingClientRect()
+    return position.x >= rect.left && position.x <= rect.right
+      && position.y >= rect.top && position.y <= rect.bottom
+  }
+
   function updateDropTarget(position: Position) {
     // Container drop detection is handled via mouseenter/mouseleave in FreeformItem
     // If currently over a container, skip reorder logic
     if (currentDropTarget.value) return
+
+    // Only update if cursor is inside the Freeform container
+    if (!isInsideContainer(position)) return
 
     const draggedIds = new Set(dragState.value.items.map(i => i.id))
     const newIndex = calculateDropIndex(position, draggedIds)
@@ -472,6 +483,14 @@ export function createFreeformContext() {
       currentDropTarget.value = null
     }
 
+    // Only update drop index if cursor is inside the Freeform container
+    if (!isInsideContainer(position)) {
+      return {
+        dropIndex: dropIndex.value,
+        containerId: foundContainer?.id ?? null,
+      }
+    }
+
     // Calculate drop index (empty set = no items to exclude for external drops)
     const newIndex = calculateDropIndex(position, new Set())
     if (newIndex !== null) {
@@ -515,6 +534,7 @@ export function createFreeformContext() {
     dropIndex,
     dragSourceIndex,
     currentDropTarget,
+    containerElement,
     itemElements,
     dropZones,
     handlePointerMove,

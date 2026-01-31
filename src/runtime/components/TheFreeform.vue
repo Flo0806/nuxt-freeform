@@ -38,6 +38,7 @@ const {
   dropIndex,
   dragSourceIndex,
   currentDropTarget,
+  containerElement,
   itemElements,
   handlePointerMove,
   handlePointerUp,
@@ -228,7 +229,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="freeform-container">
+  <div
+    ref="containerElement"
+    class="freeform-container"
+  >
     <slot
       :items="items"
       :selected="selectionState.items"
