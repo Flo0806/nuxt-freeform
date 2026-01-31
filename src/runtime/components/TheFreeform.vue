@@ -260,7 +260,10 @@ onUnmounted(() => {
           <!-- Default ghost: looks like item but transparent -->
           <div class="freeform-ghost-default">
             <span class="freeform-ghost-default__label">{{ dragItems[0]?.id }}</span>
-            <span v-if="dragItems.length > 1" class="freeform-ghost-default__badge">
+            <span
+              v-if="dragItems.length > 1"
+              class="freeform-ghost-default__badge"
+            >
               +{{ dragItems.length - 1 }}
             </span>
           </div>
