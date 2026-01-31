@@ -1,5 +1,5 @@
 import { inject, provide, ref, type InjectionKey, type Ref } from 'vue'
-import type { FreeformItemData, DragState, SelectionState, Position } from '../types'
+import type { FreeformItemData, DragState, SelectionState, Position, DropTarget, DropZoneEntry, Rect } from '../types'
 
 export const FREEFORM_CONTEXT_KEY: InjectionKey<FreeformContext> = Symbol('freeform-context')
 
@@ -10,8 +10,13 @@ export interface FreeformContext {
   disabled: Ref<boolean>
   dropIndex: Ref<number | null>
   dragSourceIndex: Ref<number | null>
+  currentDropTarget: Ref<DropTarget | null>
   registerItem: (id: string, element: HTMLElement) => void
   unregisterItem: (id: string) => void
+  registerDropZone: (id: string, element: HTMLElement, item?: FreeformItemData, accept?: (items: FreeformItemData[]) => boolean) => void
+  unregisterDropZone: (id: string) => void
+  setDropTarget: (item: FreeformItemData, accept?: (items: FreeformItemData[]) => boolean) => void
+  clearDropTarget: () => void
   select: (item: FreeformItemData, options?: { shift?: boolean, ctrl?: boolean }) => void
   clearSelection: () => void
   startDrag: (item: FreeformItemData, event: PointerEvent) => void
@@ -24,14 +29,140 @@ export interface FreeformContextInternal extends FreeformContext {
   handlePointerUp: (event: PointerEvent) => void
 }
 
+// ============================================================================
+// Constants
+// ============================================================================
+
 const DRAG_THRESHOLD = 5
+const EDGE_PERCENT = 0.40
+const EDGE_MIN_PX = 20
+const ROW_THRESHOLD = 20
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+function getEdgeThreshold(width: number): number {
+  return Math.max(width * EDGE_PERCENT, EDGE_MIN_PX)
+}
+
+function domRectToRect(domRect: DOMRect): Rect {
+  return {
+    x: domRect.left,
+    y: domRect.top,
+    width: domRect.width,
+    height: domRect.height,
+  }
+}
+
+/**
+ * Calculate placeholder position in "compacted space" (list without dragged items)
+ * Used by both getVisualIndex and FreeformPlaceholder
+ */
+export function getPlaceholderPosition(
+  items: FreeformItemData[],
+  targetIndex: number,
+  draggedIds: Set<string>,
+): number {
+  let pos = 0
+  for (let i = 0; i < targetIndex; i++) {
+    if (!draggedIds.has(items[i]!.id)) {
+      pos++
+    }
+  }
+  return pos
+}
+
+// ============================================================================
+// Reorder Helpers
+// ============================================================================
+
+type VisibleItem = { id: string, index: number, rect: DOMRect }
+
+function collectVisibleItems(
+  itemElements: Map<string, HTMLElement>,
+  items: FreeformItemData[],
+  draggedIds: Set<string>,
+): VisibleItem[] {
+  const result: VisibleItem[] = []
+  for (const [id, element] of itemElements) {
+    if (draggedIds.has(id)) continue
+    const idx = items.findIndex(i => i.id === id)
+    if (idx !== -1) {
+      result.push({ id, index: idx, rect: element.getBoundingClientRect() })
+    }
+  }
+  return result
+}
+
+function sortAndGroupByRow(visibleItems: VisibleItem[]): VisibleItem[][] {
+  // Sort by visual position (row first, then column)
+  visibleItems.sort((a, b) => {
+    const rowDiff = a.rect.top - b.rect.top
+    if (Math.abs(rowDiff) < ROW_THRESHOLD) {
+      return a.rect.left - b.rect.left
+    }
+    return rowDiff
+  })
+
+  // Group items by row
+  const rows: VisibleItem[][] = []
+  let currentRow: VisibleItem[] = []
+  let lastTop = -Infinity
+
+  for (const item of visibleItems) {
+    if (currentRow.length === 0 || Math.abs(item.rect.top - lastTop) < ROW_THRESHOLD) {
+      currentRow.push(item)
+      lastTop = item.rect.top
+    }
+    else {
+      rows.push(currentRow)
+      currentRow = [item]
+      lastTop = item.rect.top
+    }
+  }
+  if (currentRow.length > 0) rows.push(currentRow)
+
+  return rows
+}
+
+function findDropIndexInRow(row: VisibleItem[], positionX: number): number | null {
+  for (let i = 0; i <= row.length; i++) {
+    const prevItem = row[i - 1]
+    const nextItem = row[i]
+
+    let gapLeft: number
+    let gapRight: number
+
+    if (!prevItem) {
+      gapLeft = -Infinity
+      gapRight = nextItem!.rect.left + getEdgeThreshold(nextItem!.rect.width)
+    }
+    else if (!nextItem) {
+      gapLeft = prevItem.rect.right - getEdgeThreshold(prevItem.rect.width)
+      gapRight = Infinity
+    }
+    else {
+      gapLeft = prevItem.rect.right - getEdgeThreshold(prevItem.rect.width)
+      gapRight = nextItem.rect.left + getEdgeThreshold(nextItem.rect.width)
+    }
+
+    if (positionX >= gapLeft && positionX < gapRight) {
+      return nextItem ? nextItem.index : prevItem!.index + 1
+    }
+  }
+
+  return null // Cursor in middle of item (hysteresis)
+}
 
 export function createFreeformContext() {
   const itemElements = new Map<string, HTMLElement>()
+  const dropZones = new Map<string, DropZoneEntry>()
   const items = ref<FreeformItemData[]>([])
   const disabled = ref(false)
   const dropIndex = ref<number | null>(null)
   const dragSourceIndex = ref<number | null>(null)
+  const currentDropTarget = ref<DropTarget | null>(null)
 
   const dragState = ref<DragState>({
     active: false,
@@ -85,7 +216,7 @@ export function createFreeformContext() {
     // Store source index for reordering
     const sourceIdx = items.value.findIndex(i => i.id === item.id)
     dragSourceIndex.value = sourceIdx
-    dropIndex.value = sourceIdx
+    dropIndex.value = null // Will be set in updateDropTarget when threshold is passed
 
     const startPos: Position = { x: event.clientX, y: event.clientY }
 
@@ -112,33 +243,97 @@ export function createFreeformContext() {
       if (dx < DRAG_THRESHOLD && dy < DRAG_THRESHOLD) return
 
       dragState.value.thresholdPassed = true
+
+      // Initialize dropIndex to source position before first updateDropTarget call
+      if (dragSourceIndex.value !== null) {
+        dropIndex.value = dragSourceIndex.value
+      }
     }
 
     dragState.value.currentPosition = currentPosition
 
-    // Calculate drop index based on mouse position
-    updateDropIndex(currentPosition)
+    // Calculate drop target based on mouse position
+    updateDropTarget(currentPosition)
   }
 
-  function updateDropIndex(position: Position) {
-    // Find which item element the mouse is over
-    for (const [id, element] of itemElements) {
-      // Skip dragged items
-      if (dragState.value.items.some(i => i.id === id)) continue
+  function registerDropZone(id: string, element: HTMLElement, item?: FreeformItemData, accept?: (items: FreeformItemData[]) => boolean) {
+    dropZones.set(id, { id, element, item, accept })
+  }
 
-      const rect = element.getBoundingClientRect()
-      if (
-        position.x >= rect.left
-        && position.x <= rect.right
-        && position.y >= rect.top
-        && position.y <= rect.bottom
-      ) {
-        const idx = items.value.findIndex(i => i.id === id)
-        if (idx !== -1) {
-          dropIndex.value = idx
-        }
+  function unregisterDropZone(id: string) {
+    dropZones.delete(id)
+  }
+
+  function setDropTarget(item: FreeformItemData, accept?: (items: FreeformItemData[]) => boolean) {
+    const entry = dropZones.get(item.id)
+    if (!entry) return
+
+    const accepted = accept
+      ? accept(dragState.value.items)
+      : true
+
+    const rect = entry.element.getBoundingClientRect()
+
+    currentDropTarget.value = {
+      item,
+      bounds: domRectToRect(rect),
+      type: 'container',
+      accepted,
+    }
+
+    // Set dropIndex to container position for smooth placeholder behavior
+    const containerIndex = items.value.findIndex(i => i.id === item.id)
+    if (containerIndex !== -1) {
+      dropIndex.value = containerIndex
+    }
+  }
+
+  function clearDropTarget() {
+    currentDropTarget.value = null
+  }
+
+  function updateDropTarget(position: Position) {
+    // Container drop detection is handled via mouseenter/mouseleave in FreeformItem
+    // If currently over a container, skip reorder logic
+    if (currentDropTarget.value) return
+
+    const draggedIds = new Set(dragState.value.items.map(i => i.id))
+    const visibleItems = collectVisibleItems(itemElements, items.value, draggedIds)
+    if (visibleItems.length === 0) return
+
+    const rows = sortAndGroupByRow(visibleItems)
+
+    // Find which row the cursor is on
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+      const row = rows[rowIndex]!
+      if (row.length === 0) continue
+
+      const firstItem = row[0]!
+      const nextRow = rows[rowIndex + 1]
+      const rowTop = firstItem.rect.top
+      const rowBottom = nextRow?.[0]?.rect.top ?? Infinity
+
+      // Cursor is above this row -> insert before first item
+      if (position.y < rowTop) {
+        dropIndex.value = firstItem.index
         return
       }
+
+      // Cursor is within this row
+      if (position.y >= rowTop && position.y < rowBottom) {
+        const newIndex = findDropIndexInRow(row, position.x)
+        if (newIndex !== null) {
+          dropIndex.value = newIndex
+        }
+        // null = cursor in middle of item (hysteresis, keep current)
+        return
+      }
+    }
+
+    // Cursor is below all rows -> insert at the end
+    const lastRow = rows[rows.length - 1]
+    if (lastRow?.length) {
+      dropIndex.value = lastRow[lastRow.length - 1]!.index + 1
     }
   }
 
@@ -155,9 +350,10 @@ export function createFreeformContext() {
       thresholdPassed: false,
     }
 
-    // Reset sorting indices
+    // Reset sorting indices and drop target
     dragSourceIndex.value = null
     dropIndex.value = null
+    currentDropTarget.value = null
   }
 
   function getVisualIndex(itemId: string): number {
@@ -169,31 +365,20 @@ export function createFreeformContext() {
       return actualIndex
     }
 
-    // If this item is being dragged, return drop index
-    if (dragState.value.items.some(i => i.id === itemId)) {
-      return dropIndex.value
-    }
+    const draggedItems = dragState.value.items
+    const draggedIds = new Set(draggedItems.map(i => i.id))
 
-    // Calculate visual index based on drag movement
-    const source = dragSourceIndex.value
-    const target = dropIndex.value
+    // If this item is being dragged, it's hidden
+    if (draggedIds.has(itemId)) return -1
 
-    if (source === target) return actualIndex
+    // Calculate compacted index (position without dragged items)
+    const compactedIndex = getPlaceholderPosition(items.value, actualIndex, draggedIds)
+    const placeholderPos = getPlaceholderPosition(items.value, dropIndex.value, draggedIds)
 
-    if (source < target) {
-      // Dragging down: items between source and target shift up
-      if (actualIndex > source && actualIndex <= target) {
-        return actualIndex - 1
-      }
-    }
-    else {
-      // Dragging up: items between target and source shift down
-      if (actualIndex >= target && actualIndex < source) {
-        return actualIndex + 1
-      }
-    }
-
-    return actualIndex
+    // Items at or after placeholder shift right to make room
+    return compactedIndex >= placeholderPos
+      ? compactedIndex + draggedItems.length
+      : compactedIndex
   }
 
   const context: FreeformContext = {
@@ -203,8 +388,13 @@ export function createFreeformContext() {
     disabled,
     dropIndex,
     dragSourceIndex,
+    currentDropTarget,
     registerItem: (id, element) => itemElements.set(id, element),
     unregisterItem: id => itemElements.delete(id),
+    registerDropZone,
+    unregisterDropZone,
+    setDropTarget,
+    clearDropTarget,
     select,
     clearSelection,
     startDrag,
@@ -221,7 +411,9 @@ export function createFreeformContext() {
     disabled,
     dropIndex,
     dragSourceIndex,
+    currentDropTarget,
     itemElements,
+    dropZones,
     handlePointerMove,
     handlePointerUp,
     getVisualIndex,

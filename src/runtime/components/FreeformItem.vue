@@ -6,6 +6,8 @@ import { useFreeformContext } from '../composables/useFreeform'
 const props = defineProps<{
   item: FreeformItemData
   disabled?: boolean
+  asDropZone?: boolean
+  accept?: (items: FreeformItemData[]) => boolean
 }>()
 
 const context = useFreeformContext()
@@ -14,11 +16,21 @@ const elementRef = ref<HTMLElement | null>(null)
 onMounted(() => {
   if (elementRef.value) {
     context.registerItem(props.item.id, elementRef.value)
+
+    // Register as drop zone if container
+    if (isContainer.value) {
+      context.registerDropZone(props.item.id, elementRef.value, props.item, props.accept)
+    }
   }
 })
 
 onUnmounted(() => {
   context.unregisterItem(props.item.id)
+
+  // Unregister drop zone
+  if (isContainer.value) {
+    context.unregisterDropZone(props.item.id)
+  }
 })
 
 const isSelected = computed(() =>
@@ -36,6 +48,19 @@ const actualIndex = computed(() =>
 
 const visualIndex = computed(() =>
   context.getVisualIndex(props.item.id),
+)
+
+// Container/DropZone logic
+const isContainer = computed(() =>
+  props.asDropZone || props.item.type === 'container',
+)
+
+const isDropTarget = computed(() =>
+  context.currentDropTarget.value?.item?.id === props.item.id,
+)
+
+const isDropAccepted = computed(() =>
+  isDropTarget.value && context.currentDropTarget.value?.accepted,
 )
 
 function onPointerDown(event: PointerEvent) {
@@ -67,6 +92,27 @@ function onClick(event: MouseEvent) {
   // Normal click selects only this item
   context.select(props.item)
 }
+
+// Container drop zone handling via mouse events (not continuous bounds checks)
+function onMouseEnter() {
+  if (!isContainer.value) return
+  if (!context.dragState.value.thresholdPassed) return
+
+  // Don't drop on self
+  const draggedIds = new Set(context.dragState.value.items.map(i => i.id))
+  if (draggedIds.has(props.item.id)) return
+
+  context.setDropTarget(props.item, props.accept)
+}
+
+function onMouseLeave() {
+  if (!isContainer.value) return
+
+  // Only clear if we are the current target
+  if (context.currentDropTarget.value?.item?.id === props.item.id) {
+    context.clearDropTarget()
+  }
+}
 </script>
 
 <template>
@@ -77,12 +123,19 @@ function onClick(event: MouseEvent) {
       'freeform-item--selected': isSelected,
       'freeform-item--dragging': isDragging,
       'freeform-item--disabled': disabled,
+      'freeform-item--container': isContainer,
+      'freeform-item--drop-target': isDropTarget,
+      'freeform-item--drop-accepted': isDropAccepted,
+      'freeform-item--drop-rejected': isDropTarget && !isDropAccepted,
     }"
+    :style="{ order: visualIndex, display: isDragging ? 'none' : undefined }"
     data-freeform-item
     :data-index="actualIndex"
     :data-visual-index="visualIndex"
     @pointerdown="onPointerDown"
     @click="onClick"
+    @mouseenter="onMouseEnter"
+    @mouseleave="onMouseLeave"
   >
     <slot
       :item="item"
@@ -90,6 +143,9 @@ function onClick(event: MouseEvent) {
       :dragging="isDragging"
       :index="actualIndex"
       :visual-index="visualIndex"
+      :is-container="isContainer"
+      :drop-target="isDropTarget"
+      :drop-accepted="isDropAccepted"
     />
   </div>
 </template>

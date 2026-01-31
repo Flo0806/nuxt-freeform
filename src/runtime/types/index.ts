@@ -100,6 +100,11 @@ export interface DragEventPayload<T extends FreeformItemData = FreeformItemData>
 // =============================================================================
 
 /**
+ * Type of drop target
+ */
+export type DropTargetType = 'reorder' | 'container' | null
+
+/**
  * Drop target information
  */
 export interface DropTarget<T extends FreeformItemData = FreeformItemData> {
@@ -107,6 +112,20 @@ export interface DropTarget<T extends FreeformItemData = FreeformItemData> {
   item: T
   /** Element bounds for hit testing */
   bounds: Rect
+  /** Type of drop target */
+  type: DropTargetType
+  /** Whether the drop is accepted by the target */
+  accepted: boolean
+}
+
+/**
+ * Drop zone registry entry
+ */
+export interface DropZoneEntry<T extends FreeformItemData = FreeformItemData> {
+  id: string
+  element: HTMLElement
+  item?: T
+  accept?: (items: T[]) => boolean
 }
 
 /**
@@ -123,6 +142,10 @@ export interface DropEventPayload<T extends FreeformItemData = FreeformItemData>
   fromIndex?: number
   /** For sorting: new index */
   toIndex?: number
+  /** Container item if dropped into a container */
+  targetContainer?: T | null
+  /** Type of drop operation */
+  dropType: DropTargetType
 }
 
 // =============================================================================
@@ -197,6 +220,10 @@ export interface FreeformItemProps<T extends FreeformItemData = FreeformItemData
   handle?: string
   /** Disable dragging for this item */
   disabled?: boolean
+  /** Mark this item as a drop zone (auto-detected if item.type === 'container') */
+  asDropZone?: boolean
+  /** Accept function to validate drops (only used when asDropZone is true) */
+  accept?: (items: T[]) => boolean
 }
 
 /**
@@ -260,13 +287,14 @@ export interface FreeformContext<T extends FreeformItemData = FreeformItemData> 
   items: Readonly<T[]>
   dragState: Readonly<DragState<T>>
   selectionState: Readonly<SelectionState<T>>
+  currentDropTarget: Ref<DropTarget<T> | null>
 
   // Item registration (called by FreeformItem on mount)
   registerItem: (id: string, element: HTMLElement) => void
   unregisterItem: (id: string) => void
 
   // Drop zone registration
-  registerDropZone: (id: string, element: HTMLElement, accept?: (items: T[]) => boolean) => void
+  registerDropZone: (id: string, element: HTMLElement, item?: T, accept?: (items: T[]) => boolean) => void
   unregisterDropZone: (id: string) => void
 
   // Actions

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { watch, onMounted, onUnmounted, computed, inject, useAttrs } from 'vue'
-import type { FreeformItemData } from '../types'
+import type { FreeformItemData, DropEventPayload } from '../types'
 import { SELECTION_CONTEXT_KEY } from '../types'
 import { createFreeformContext } from '../composables/useFreeform'
 
@@ -18,6 +18,8 @@ const emit = defineEmits<{
   'drag-move': [items: FreeformItemData[], position: { x: number, y: number }]
   'drag-end': [items: FreeformItemData[]]
   'reorder': [fromIndex: number, toIndex: number]
+  'drop': [payload: DropEventPayload]
+  'drop-into': [items: FreeformItemData[], container: FreeformItemData]
 }>()
 
 const {
@@ -27,6 +29,7 @@ const {
   disabled: contextDisabled,
   dropIndex,
   dragSourceIndex,
+  currentDropTarget,
   itemElements,
   handlePointerMove,
   handlePointerUp,
@@ -129,15 +132,38 @@ function reorderItems(draggedItems: FreeformItemData[], targetIndex: number): Fr
 function onPointerUp(event: PointerEvent) {
   if (dragState.value.thresholdPassed) {
     const draggedItems = [...dragState.value.items]
+    const dropTarget = currentDropTarget.value
+
     emit('drag-end', draggedItems)
 
-    const to = dropIndex.value
-    if (to !== null && draggedItems.length > 0) {
-      const newItems = reorderItems(draggedItems, to)
-      // Update internal state immediately to prevent race conditions
-      items.value = newItems
-      emit('update:modelValue', newItems)
-      emit('reorder', dragSourceIndex.value ?? 0, to)
+    // Drop into container
+    if (dropTarget?.type === 'container' && dropTarget.accepted) {
+      emit('drop-into', draggedItems, dropTarget.item)
+      emit('drop', {
+        items: draggedItems,
+        target: dropTarget,
+        position: dragState.value.currentPosition!,
+        dropType: 'container',
+        targetContainer: dropTarget.item,
+      })
+    }
+    // Reorder (no container target)
+    else {
+      const to = dropIndex.value
+      if (to !== null && draggedItems.length > 0) {
+        const newItems = reorderItems(draggedItems, to)
+        items.value = newItems
+        emit('update:modelValue', newItems)
+        emit('reorder', dragSourceIndex.value ?? 0, to)
+        emit('drop', {
+          items: draggedItems,
+          target: null,
+          position: dragState.value.currentPosition!,
+          dropType: 'reorder',
+          fromIndex: dragSourceIndex.value ?? 0,
+          toIndex: to,
+        })
+      }
     }
   }
   handlePointerUp(event)
@@ -179,6 +205,8 @@ onUnmounted(() => {
       :is-dragging="isDragging"
       :drag-items="dragItems"
       :is-lasso-active="isLassoActive"
+      :drop-index="dropIndex"
+      :drag-source-index="dragSourceIndex"
     />
 
     <!-- Drag Ghost (user provides via slot) -->
