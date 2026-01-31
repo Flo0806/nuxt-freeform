@@ -1,24 +1,28 @@
 <script setup lang="ts">
-import { ref, shallowRef, computed, onMounted, onUnmounted, provide } from 'vue'
-import type { FreeformItemData, Position, Rect, SelectionState, RegisteredFreeform } from '../types'
+import { shallowRef, computed, watch, onMounted, onUnmounted, provide } from 'vue'
+import type { FreeformItemData, Position, Rect, RegisteredFreeform } from '../types'
 import { SELECTION_CONTEXT_KEY } from '../types'
 
 const emit = defineEmits<{
   select: [items: FreeformItemData[]]
 }>()
 
-// Registered freeform (shallowRef to prevent unwrapping nested refs)
+// Registered freeform - this is the SINGLE SOURCE OF TRUTH for selection
 const registeredFreeform = shallowRef<RegisteredFreeform | null>(null)
 
-// Local selection state (used when no freeform is registered yet)
-const selectionState = ref<SelectionState>({
-  items: [],
-  lassoActive: false,
-  lassoRect: null,
-})
-
-// Lasso start position
+// Lasso start position (local UI state only)
 let lassoStart: Position | null = null
+
+// Computed accessors to the freeform's selection state
+const selectionState = computed(() => registeredFreeform.value?.selectionState.value ?? null)
+const isLassoActive = computed(() => selectionState.value?.lassoActive ?? false)
+const lassoRect = computed(() => selectionState.value?.lassoRect ?? null)
+const selectedItems = computed(() => selectionState.value?.items ?? [])
+
+// Watch selection changes and emit select event
+watch(selectedItems, (items) => {
+  emit('select', [...items])
+}, { deep: true })
 
 function startLasso(event: PointerEvent) {
   if (!registeredFreeform.value) return
@@ -28,19 +32,18 @@ function startLasso(event: PointerEvent) {
   lassoStart = { x: event.clientX, y: event.clientY }
   const initialRect: Rect = { x: event.clientX, y: event.clientY, width: 0, height: 0 }
 
-  // Update local state
-  selectionState.value.lassoActive = true
-  selectionState.value.lassoRect = initialRect
-  selectionState.value.items = []
+  // Prevent browser text selection during lasso
+  document.body.style.userSelect = 'none'
 
-  // Update freeform's selection state
-  registeredFreeform.value.selectionState.value.lassoActive = true
-  registeredFreeform.value.selectionState.value.lassoRect = initialRect
-  registeredFreeform.value.selectionState.value.items = []
+  // Update freeform's selection state (single source of truth)
+  const state = registeredFreeform.value.selectionState.value
+  state.lassoActive = true
+  state.lassoRect = initialRect
+  state.items = []
 }
 
 function handleLassoMove(event: PointerEvent) {
-  if (!selectionState.value.lassoActive || !lassoStart || !registeredFreeform.value) return
+  if (!registeredFreeform.value || !isLassoActive.value || !lassoStart) return
 
   const currentX = event.clientX
   const currentY = event.clientY
@@ -52,29 +55,23 @@ function handleLassoMove(event: PointerEvent) {
     height: Math.abs(currentY - lassoStart.y),
   }
 
-  // Update local state
-  selectionState.value.lassoRect = rect
-
   // Find items inside lasso rect
   const { items, itemElements } = registeredFreeform.value
-  const selectedItems: FreeformItemData[] = []
+  const foundItems: FreeformItemData[] = []
 
   for (const [id, element] of itemElements) {
     if (isElementInRect(element, rect)) {
       const item = items.value.find(i => i.id === id)
       if (item) {
-        selectedItems.push(item)
+        foundItems.push(item)
       }
     }
   }
 
-  selectionState.value.items = selectedItems
-
-  // Update freeform's selection state
-  registeredFreeform.value.selectionState.value.lassoRect = rect
-  registeredFreeform.value.selectionState.value.items = selectedItems
-
-  emit('select', selectedItems)
+  // Update freeform's selection state (single source of truth)
+  const state = registeredFreeform.value.selectionState.value
+  state.lassoRect = rect
+  state.items = foundItems
 }
 
 function isElementInRect(element: HTMLElement, rect: Rect): boolean {
@@ -90,12 +87,13 @@ function isElementInRect(element: HTMLElement, rect: Rect): boolean {
 function endLasso() {
   lassoStart = null
 
-  selectionState.value.lassoActive = false
-  selectionState.value.lassoRect = null
+  // Re-enable browser text selection
+  document.body.style.userSelect = ''
 
   if (registeredFreeform.value) {
-    registeredFreeform.value.selectionState.value.lassoActive = false
-    registeredFreeform.value.selectionState.value.lassoRect = null
+    const state = registeredFreeform.value.selectionState.value
+    state.lassoActive = false
+    state.lassoRect = null
   }
 }
 
@@ -108,13 +106,13 @@ function onPointerDown(event: PointerEvent) {
 }
 
 function onPointerMove(event: PointerEvent) {
-  if (selectionState.value.lassoActive) {
+  if (isLassoActive.value) {
     handleLassoMove(event)
   }
 }
 
 function onPointerUp() {
-  if (selectionState.value.lassoActive) {
+  if (isLassoActive.value) {
     endLasso()
   }
 }
@@ -127,12 +125,7 @@ provide(SELECTION_CONTEXT_KEY, {
   unregisterFreeform: () => {
     registeredFreeform.value = null
   },
-  selectionState,
 })
-
-// Computed for template
-const isLassoActive = computed(() => selectionState.value.lassoActive)
-const lassoRect = computed(() => selectionState.value.lassoRect)
 
 const lassoStyle = computed(() => {
   if (!lassoRect.value) return { display: 'none' }
@@ -167,7 +160,7 @@ onUnmounted(() => {
     <slot
       :is-lasso-active="isLassoActive"
       :lasso-rect="lassoRect"
-      :selected="selectionState.items"
+      :selected="selectedItems"
     />
 
     <!-- Lasso Selection Box -->
@@ -179,7 +172,7 @@ onUnmounted(() => {
         <slot
           name="lasso"
           :rect="lassoRect"
-          :selected-count="selectionState.items.length"
+          :selected-count="selectedItems.length"
         >
           <div class="freeform-lasso" />
         </slot>

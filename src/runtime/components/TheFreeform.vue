@@ -26,7 +26,7 @@ const emit = defineEmits<{
   'drag-end': [items: FreeformItemData[]]
   'reorder': [fromIndex: number, toIndex: number]
   'drop': [payload: DropEventPayload]
-  'drop-into': [items: FreeformItemData[], container: FreeformItemData]
+  'drop-into': [items: FreeformItemData[], container: FreeformItemData, accepted: boolean]
   'drop-to-zone': [items: FreeformItemData[], zoneId: string, index: number, containerId: string | null]
 }>()
 
@@ -100,8 +100,8 @@ const dragItems = computed(() => dragState.value.items)
 const dragPosition = computed(() => dragState.value.currentPosition)
 const dragStartPosition = computed(() => dragState.value.startPosition)
 
-// Lasso state from selection context (if present)
-const isLassoActive = computed(() => selectionContext?.selectionState.value.lassoActive ?? false)
+// Lasso state from our own selection state
+const isLassoActive = computed(() => selectionState.value.lassoActive)
 
 // Global pointer event listeners
 function onPointerMove(event: PointerEvent) {
@@ -155,17 +155,23 @@ function onPointerUp(event: PointerEvent) {
         targetZoneId: externalDrop.zoneId,
         targetContainerId: externalDrop.containerId,
       })
+      // Clear selection after dropping to external zone
+      selectionState.value.items = []
     }
-    // Drop into container (internal)
-    else if (dropTarget?.type === 'container' && dropTarget.accepted) {
-      emit('drop-into', draggedItems, dropTarget.item)
-      emit('drop', {
-        items: draggedItems,
-        target: dropTarget,
-        position: dragState.value.currentPosition!,
-        dropType: 'container',
-        targetContainer: dropTarget.item,
-      })
+    // Drop into container (internal) - emit for both accepted and rejected
+    else if (dropTarget?.type === 'container') {
+      emit('drop-into', draggedItems, dropTarget.item, dropTarget.accepted)
+      if (dropTarget.accepted) {
+        emit('drop', {
+          items: draggedItems,
+          target: dropTarget,
+          position: dragState.value.currentPosition!,
+          dropType: 'container',
+          targetContainer: dropTarget.item,
+        })
+        // Clear selection after dropping into container
+        selectionState.value.items = []
+      }
     }
     // Reorder (no container target)
     else {

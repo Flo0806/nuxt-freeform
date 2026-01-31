@@ -324,7 +324,6 @@ export interface RegisteredFreeform<T extends FreeformItemData = FreeformItemDat
 export interface SelectionContext<T extends FreeformItemData = FreeformItemData> {
   registerFreeform: (ctx: RegisteredFreeform<T>) => void
   unregisterFreeform: () => void
-  selectionState: Ref<SelectionState<T>>
 }
 
 /**
