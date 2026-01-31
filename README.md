@@ -1,74 +1,392 @@
-<!--
-Get your module up and running quickly.
-
-Find and replace all on all files (CMD+SHIFT+F):
-- Name: My Module
-- Package name: nuxt-freeform
-- Description: My new Nuxt module
--->
-
-# My Module
+# nuxt-freeform
 
 [![npm version][npm-version-src]][npm-version-href]
 [![npm downloads][npm-downloads-src]][npm-downloads-href]
 [![License][license-src]][license-href]
 [![Nuxt][nuxt-src]][nuxt-href]
 
-My new Nuxt module for doing amazing things.
+Desktop-like drag & drop for Nuxt/Vue. Lasso selection, reorder, drop into containers - all with sensible defaults.
 
-- [✨ &nbsp;Release Notes](/CHANGELOG.md)
-<!-- - [🏀 Online playground](https://stackblitz.com/github/your-org/nuxt-freeform?file=playground%2Fapp.vue) -->
-<!-- - [📖 &nbsp;Documentation](https://example.com) -->
+**There's no Nuxt module for drag & drop on nuxt.com/modules** - until now.
 
 ## Features
 
-<!-- Highlight some of the features your module provide here -->
-- ⛰ &nbsp;Foo
-- 🚠 &nbsp;Bar
-- 🌲 &nbsp;Baz
+- **Lasso Selection** - Select multiple items with a selection rectangle, just like on your desktop
+- **Drag & Drop** - Reorder items or drop into containers/folders
+- **Multi-Select** - Ctrl/Cmd+Click to toggle selection, drag multiple items at once
+- **Zero Config** - Works out of the box with sensible defaults
+- **Fully Customizable** - Override any visual via slots
+- **CSS Variables** - Easy theming with CSS custom properties
+- **SSR Safe** - Proper hydration support for Nuxt
+- **TypeScript** - Full type support with generics
 
-## Quick Setup
-
-Install the module to your Nuxt application with one command:
+## Installation
 
 ```bash
-npx nuxt module add nuxt-freeform
+npx nuxi module add nuxt-freeform
 ```
 
-That's it! You can now use My Module in your Nuxt app ✨
+Or manually:
 
+```bash
+pnpm add nuxt-freeform
+```
 
-## Contribution
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['nuxt-freeform']
+})
+```
 
-<details>
-  <summary>Local development</summary>
-  
-  ```bash
-  # Install dependencies
-  npm install
-  
-  # Generate type stubs
-  npm run dev:prepare
-  
-  # Develop with the playground
-  npm run dev
-  
-  # Build the playground
-  npm run dev:build
-  
-  # Run ESLint
-  npm run lint
-  
-  # Run Vitest
-  npm run test
-  npm run test:watch
-  
-  # Release new version
-  npm run release
-  ```
+## Quick Start
 
-</details>
+The simplest example - just 15 lines of code:
 
+```vue
+<script setup>
+const items = ref([
+  { id: 'Folder A', type: 'container' },
+  { id: 'Folder B', type: 'container' },
+  { id: 'Item 1' },
+  { id: 'Item 2' },
+  { id: 'Item 3' },
+])
+
+function onDropInto(droppedItems, container, accepted) {
+  if (!accepted) return
+  // Remove items from list (they're now "inside" the folder)
+  items.value = items.value.filter(i => !droppedItems.some(d => d.id === i.id))
+}
+</script>
+
+<template>
+  <TheFreeform v-model="items" @drop-into="onDropInto" class="flex flex-wrap gap-3 p-4">
+    <FreeformItem v-for="item in items" :key="item.id" :item="item" />
+    <FreeformPlaceholder />
+  </TheFreeform>
+</template>
+```
+
+You get:
+- Drag to reorder (automatic via `v-model`)
+- Drop into folders (items with `type: 'container'`)
+- Default ghost, placeholder, and item styling
+- Selection states
+
+## Components
+
+### TheFreeform
+
+The main container that manages all drag & drop state.
+
+```vue
+<TheFreeform
+  v-model="items"
+  :disabled="false"
+  :manual-reorder="false"
+  @select="onSelect"
+  @drag-start="onDragStart"
+  @drag-end="onDragEnd"
+  @drop-into="onDropInto"
+  @reorder="onReorder"
+>
+  <!-- items go here -->
+</TheFreeform>
+```
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `modelValue` | `FreeformItemData[]` | required | Items array (v-model) |
+| `disabled` | `boolean` | `false` | Disable all interactions |
+| `manualReorder` | `boolean` | `false` | Don't auto-reorder, handle manually |
+
+### FreeformItem
+
+Individual draggable item. Automatically registers with the parent `TheFreeform`.
+
+```vue
+<FreeformItem
+  :item="item"
+  :disabled="false"
+  :as-drop-zone="false"
+  :accept="acceptFn"
+>
+  <template #default="{ selected, dragging, dropTarget, dropAccepted }">
+    <!-- custom content -->
+  </template>
+</FreeformItem>
+```
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `item` | `FreeformItemData` | required | Item data |
+| `disabled` | `boolean` | `false` | Disable dragging for this item |
+| `asDropZone` | `boolean` | `false` | Force this item to be a drop target |
+| `accept` | `(items) => boolean` | - | Validate if drop is allowed |
+
+**Slot Props:**
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `item` | `object` | The item data |
+| `selected` | `boolean` | Item is selected |
+| `dragging` | `boolean` | Item is being dragged |
+| `dropTarget` | `boolean` | Item is a drop target (hovering) |
+| `dropAccepted` | `boolean` | Drop would be accepted |
+
+### FreeformPlaceholder
+
+Shows where dragged items will land. Automatically sizes to match the dragged item.
+
+```vue
+<FreeformPlaceholder>
+  <template #default="{ count, size }">
+    <div class="my-placeholder">{{ count }} items</div>
+  </template>
+</FreeformPlaceholder>
+```
+
+### FreeformSelection
+
+Wraps `TheFreeform` to enable lasso selection.
+
+```vue
+<FreeformSelection @select="onSelect">
+  <TheFreeform v-model="items">
+    <!-- ... -->
+  </TheFreeform>
+
+  <template #lasso="{ selectedCount }">
+    <div class="selection-box">
+      <span class="badge">{{ selectedCount }}</span>
+    </div>
+  </template>
+</FreeformSelection>
+```
+
+## Examples
+
+### File Manager
+
+```vue
+<script setup>
+interface FileItem {
+  id: string
+  name: string
+  icon: string
+  type?: 'container'
+}
+
+const files = ref<FileItem[]>([
+  { id: '1', name: 'Documents', icon: '📁', type: 'container' },
+  { id: '2', name: 'Photos', icon: '📁', type: 'container' },
+  { id: '3', name: 'readme.md', icon: '📝' },
+  { id: '4', name: 'photo.jpg', icon: '🖼️' },
+])
+
+function onDropInto(items: FileItem[], folder: FileItem, accepted: boolean) {
+  if (!accepted) return
+  files.value = files.value.filter(f => !items.some(i => i.id === f.id))
+  console.log(`Moved ${items.map(i => i.name).join(', ')} to ${folder.name}`)
+}
+</script>
+
+<template>
+  <TheFreeform v-model="files" @drop-into="onDropInto" class="flex flex-wrap gap-4 p-6">
+    <FreeformItem v-for="file in files" :key="file.id" :item="file">
+      <template #default="{ selected, dropTarget, dropAccepted }">
+        <div
+          class="flex flex-col items-center p-4 rounded-lg cursor-pointer"
+          :class="{
+            'bg-blue-100 ring-2 ring-blue-500': selected,
+            'bg-green-100 ring-2 ring-green-500': dropTarget && dropAccepted,
+            'bg-red-100 ring-2 ring-red-500': dropTarget && !dropAccepted,
+          }"
+        >
+          <span class="text-4xl">{{ file.icon }}</span>
+          <span class="mt-2 text-sm">{{ file.name }}</span>
+        </div>
+      </template>
+    </FreeformItem>
+    <FreeformPlaceholder />
+  </TheFreeform>
+</template>
+```
+
+### With Lasso Selection
+
+```vue
+<script setup>
+const items = ref([
+  { id: '1', name: 'Item 1' },
+  { id: '2', name: 'Item 2' },
+  { id: '3', name: 'Item 3' },
+])
+
+const selected = ref([])
+
+function onSelect(items) {
+  selected.value = items
+}
+</script>
+
+<template>
+  <FreeformSelection @select="onSelect">
+    <TheFreeform v-model="items" class="flex flex-wrap gap-3 p-4 min-h-[300px]">
+      <FreeformItem v-for="item in items" :key="item.id" :item="item" />
+      <FreeformPlaceholder />
+    </TheFreeform>
+
+    <template #lasso="{ selectedCount }">
+      <div class="border border-blue-500 bg-blue-500/10 rounded relative">
+        <span
+          v-if="selectedCount"
+          class="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full px-2"
+        >
+          {{ selectedCount }}
+        </span>
+      </div>
+    </template>
+  </FreeformSelection>
+</template>
+```
+
+### Custom Accept Function
+
+Prevent certain drops (e.g., folders into folders):
+
+```vue
+<script setup>
+const items = ref([
+  { id: '1', name: 'Folder', type: 'container' },
+  { id: '2', name: 'File.txt' },
+])
+
+// Only accept non-container items
+function acceptFiles(draggedItems) {
+  return draggedItems.every(item => item.type !== 'container')
+}
+</script>
+
+<template>
+  <TheFreeform v-model="items">
+    <FreeformItem
+      v-for="item in items"
+      :key="item.id"
+      :item="item"
+      :accept="item.type === 'container' ? acceptFiles : undefined"
+    />
+    <FreeformPlaceholder />
+  </TheFreeform>
+</template>
+```
+
+### Custom Ghost
+
+```vue
+<TheFreeform v-model="items">
+  <FreeformItem v-for="item in items" :key="item.id" :item="item" />
+  <FreeformPlaceholder />
+
+  <template #drag-ghost="{ items, count }">
+    <div class="bg-white shadow-xl rounded-lg p-4 flex items-center gap-3">
+      <span class="text-2xl">{{ items[0]?.icon }}</span>
+      <div>
+        <div class="font-medium">{{ items[0]?.name }}</div>
+        <div v-if="count > 1" class="text-sm text-gray-500">
+          +{{ count - 1 }} more
+        </div>
+      </div>
+    </div>
+  </template>
+</TheFreeform>
+```
+
+## CSS Variables
+
+Customize the default styling with CSS variables:
+
+```css
+.my-freeform {
+  /* Primary color (selection, placeholder) */
+  --freeform-color-primary: #3b82f6;
+  --freeform-color-primary-light: #dbeafe;
+
+  /* Success color (drop accepted) */
+  --freeform-color-success: #22c55e;
+  --freeform-color-success-light: #dcfce7;
+
+  /* Danger color (drop rejected) */
+  --freeform-color-danger: #ef4444;
+  --freeform-color-danger-light: #fee2e2;
+
+  /* Neutral colors */
+  --freeform-color-neutral: #f3f4f6;
+  --freeform-color-text: #374151;
+}
+```
+
+## Events
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `update:modelValue` | `items[]` | Items array changed (reorder) |
+| `select` | `items[]` | Selection changed |
+| `drag-start` | `items[]` | Drag operation started |
+| `drag-move` | `items[], position` | Dragging (with cursor position) |
+| `drag-end` | `items[]` | Drag operation ended |
+| `drop-into` | `items[], container, accepted` | Items dropped into a container |
+| `reorder` | `fromIndex, toIndex` | Items reordered |
+
+## TypeScript
+
+Extend `FreeformItemData` with your own properties:
+
+```ts
+import type { FreeformItemData } from 'nuxt-freeform'
+
+interface MyItem extends FreeformItemData {
+  name: string
+  icon: string
+  size?: number
+}
+
+const items = ref<MyItem[]>([
+  { id: '1', name: 'File', icon: '📄', size: 1024 }
+])
+```
+
+## Development
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start playground
+pnpm dev
+
+# Build
+pnpm build
+
+# Lint
+pnpm lint
+
+# Test
+pnpm test
+```
+
+## Inspiration
+
+This module was inspired by the Angular library [ngx-explorer-dnd](https://github.com/Flo0806/ngx-explorer-dnd) and brings the same desktop-like drag & drop experience to the Vue/Nuxt ecosystem.
+
+## License
+
+[MIT](./LICENSE)
+
+---
+
+Made with ♥️ by Flo0806 · Creator of [nuxt.care](https://nuxt.care)
 
 <!-- Badges -->
 [npm-version-src]: https://img.shields.io/npm/v/nuxt-freeform/latest.svg?style=flat&colorA=020420&colorB=00DC82
