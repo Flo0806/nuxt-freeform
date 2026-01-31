@@ -332,6 +332,33 @@ export interface SelectionContext<T extends FreeformItemData = FreeformItemData>
 export const SELECTION_CONTEXT_KEY: InjectionKey<SelectionContext> = Symbol('freeform-selection-context')
 
 // =============================================================================
+// GRID TYPES (FreeformGrid component)
+// =============================================================================
+
+/**
+ * Grid cell position
+ */
+export interface GridCell {
+  x: number
+  y: number
+}
+
+/**
+ * Context provided by FreeformGrid to children
+ */
+export interface FreeformGridContext {
+  columns: Ref<number>
+  rows: Ref<number>
+  hoveredCell: Ref<GridCell | null>
+  isDragging: Ref<boolean>
+}
+
+/**
+ * Injection key for FreeformGrid context
+ */
+export const FREEFORM_GRID_KEY: InjectionKey<FreeformGridContext> = Symbol('freeform-grid')
+
+// =============================================================================
 // UTILITY TYPES
 // =============================================================================
 
