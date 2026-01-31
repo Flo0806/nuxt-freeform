@@ -143,26 +143,26 @@ function onClick(event: MouseEvent) {
 /* Default item styling */
 .freeform-item-default {
   padding: 16px 24px;
-  background: #f3f4f6;
+  background: var(--freeform-color-neutral);
   border-radius: 8px;
   font-weight: 500;
-  color: #374151;
+  color: var(--freeform-color-text);
   transition: all 0.15s ease;
 }
 
 .freeform-item--selected .freeform-item-default {
-  background: #dbeafe;
-  box-shadow: 0 0 0 2px #3b82f6;
+  background: var(--freeform-color-primary-light);
+  box-shadow: 0 0 0 2px var(--freeform-color-primary);
 }
 
 .freeform-item--drop-target.freeform-item--drop-accepted .freeform-item-default {
-  background: #dcfce7;
-  box-shadow: 0 0 0 2px #22c55e;
+  background: var(--freeform-color-success-light);
+  box-shadow: 0 0 0 2px var(--freeform-color-success);
   transform: scale(1.02);
 }
 
 .freeform-item--drop-target.freeform-item--drop-rejected .freeform-item-default {
-  background: #fee2e2;
-  box-shadow: 0 0 0 2px #ef4444;
+  background: var(--freeform-color-danger-light);
+  box-shadow: 0 0 0 2px var(--freeform-color-danger);
 }
 </style>

@@ -273,6 +273,16 @@ onUnmounted(() => {
 <style>
 .freeform-container {
   position: relative;
+
+  /* Color tokens - override these to customize */
+  --freeform-color-primary: #3b82f6;
+  --freeform-color-primary-light: #dbeafe;
+  --freeform-color-success: #22c55e;
+  --freeform-color-success-light: #dcfce7;
+  --freeform-color-danger: #ef4444;
+  --freeform-color-danger-light: #fee2e2;
+  --freeform-color-neutral: #f3f4f6;
+  --freeform-color-text: #374151;
 }
 
 /* Default ghost styling - looks like item but transparent */
@@ -281,7 +291,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   padding: 16px 24px;
-  background: rgba(243, 244, 246, 0.9);
+  background: var(--freeform-color-neutral);
   border-radius: 8px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(4px);
@@ -289,7 +299,7 @@ onUnmounted(() => {
 
 .freeform-ghost-default__label {
   font-weight: 500;
-  color: #374151;
+  color: var(--freeform-color-text);
 }
 
 .freeform-ghost-default__badge {
@@ -299,7 +309,7 @@ onUnmounted(() => {
   min-width: 24px;
   height: 24px;
   padding: 0 8px;
-  background: #3b82f6;
+  background: var(--freeform-color-primary);
   border-radius: 12px;
   color: white;
   font-size: 12px;

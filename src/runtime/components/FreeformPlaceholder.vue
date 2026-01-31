@@ -86,9 +86,9 @@ const placeholderSize = computed(() => context.draggedItemSize.value)
 .freeform-placeholder__default {
   position: absolute;
   inset: 0;
-  border: 2px dashed rgba(59, 130, 246, 0.5);
+  border: 2px dashed color-mix(in srgb, var(--freeform-color-primary) 50%, transparent);
   border-radius: 8px;
-  background: rgba(59, 130, 246, 0.1);
+  background: color-mix(in srgb, var(--freeform-color-primary) 10%, transparent);
   box-sizing: border-box;
 }
 </style>
