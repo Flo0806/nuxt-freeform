@@ -7,10 +7,18 @@ interface MyItem extends FreeformItemData {
 }
 
 const items = ref<MyItem[]>([
-  { id: '1', name: 'Item 1', color: '#ef4444' },
-  { id: '2', name: 'Item 2', color: '#22c55e' },
-  { id: '3', name: 'Item 3', color: '#3b82f6' },
-  { id: '4', name: 'Item 4', color: '#eab308' },
+  { id: '1', name: '1', color: '#ef4444' },
+  { id: '2', name: '2', color: '#f97316' },
+  { id: '3', name: '3', color: '#eab308' },
+  { id: '4', name: '4', color: '#84cc16' },
+  { id: '5', name: '5', color: '#22c55e' },
+  { id: '6', name: '6', color: '#14b8a6' },
+  { id: '7', name: '7', color: '#06b6d4' },
+  { id: '8', name: '8', color: '#3b82f6' },
+  { id: '9', name: '9', color: '#6366f1' },
+  { id: '10', name: '10', color: '#8b5cf6' },
+  { id: '11', name: '11', color: '#a855f7' },
+  { id: '12', name: '12', color: '#ec4899' },
 ])
 
 const selected = ref<MyItem[]>([])

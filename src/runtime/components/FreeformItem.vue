@@ -26,15 +26,43 @@ const isSelected = computed(() =>
 )
 
 const isDragging = computed(() =>
-  context.dragState.value.items.some((i: FreeformItemData) => i.id === props.item.id),
+  context.dragState.value.thresholdPassed
+  && context.dragState.value.items.some((i: FreeformItemData) => i.id === props.item.id),
 )
+
+const actualIndex = computed(() =>
+  context.items.value.findIndex(i => i.id === props.item.id),
+)
+
+const visualIndex = computed(() =>
+  context.getVisualIndex(props.item.id),
+)
+
+function onPointerDown(event: PointerEvent) {
+  if (props.disabled) return
+
+  // Handle selection on pointer down
+  // Ctrl/Cmd+click toggles selection
+  if (event.ctrlKey || event.metaKey) {
+    context.select(props.item, { ctrl: true })
+    return
+  }
+
+  // Start drag (will also select item if not already selected)
+  context.startDrag(props.item, event)
+}
 
 function onClick(event: MouseEvent) {
   if (props.disabled) return
-  context.select(props.item, {
-    ctrl: event.ctrlKey || event.metaKey,
-    shift: event.shiftKey,
-  })
+
+  // If a drag happened, don't change selection
+  if (context.dragState.value.thresholdPassed) return
+
+  // Ctrl+click was already handled in pointerdown
+  if (event.ctrlKey || event.metaKey) return
+
+  // Normal click selects only this item
+  context.select(props.item)
 }
 </script>
 
@@ -47,27 +75,23 @@ function onClick(event: MouseEvent) {
       'freeform-item--dragging': isDragging,
       'freeform-item--disabled': disabled,
     }"
+    :data-index="actualIndex"
+    :data-visual-index="visualIndex"
+    @pointerdown="onPointerDown"
     @click="onClick"
   >
     <slot
       :item="item"
       :selected="isSelected"
       :dragging="isDragging"
+      :index="actualIndex"
+      :visual-index="visualIndex"
     />
   </div>
 </template>
 
 <style>
 .freeform-item {
-  cursor: pointer;
-}
-
-.freeform-item--dragging {
-  opacity: 0.5;
-}
-
-.freeform-item--disabled {
-  pointer-events: none;
-  opacity: 0.5;
+  touch-action: none;
 }
 </style>
