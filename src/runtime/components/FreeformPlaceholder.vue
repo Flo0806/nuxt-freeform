@@ -46,15 +46,27 @@ const placeholderOrder = computed(() => {
   const draggedIds = new Set(context.dragState.value.items.map(i => i.id))
   return getPlaceholderPosition(context.items.value, context.dropIndex.value, draggedIds)
 })
+
+// Get size from dragged item
+const placeholderSize = computed(() => context.draggedItemSize.value)
 </script>
 
 <template>
   <div
     v-if="isVisible"
     class="freeform-placeholder"
-    :style="{ order: placeholderOrder }"
+    :style="{
+      order: placeholderOrder,
+      width: placeholderSize ? `${placeholderSize.width}px` : 'auto',
+      height: placeholderSize ? `${placeholderSize.height}px` : 'auto',
+      minHeight: placeholderSize ? `${placeholderSize.height}px` : undefined,
+      maxHeight: placeholderSize ? `${placeholderSize.height}px` : undefined,
+    }"
   >
-    <slot :count="dragCount">
+    <slot
+      :count="dragCount"
+      :size="placeholderSize"
+    >
       <!-- Default placeholder style -->
       <div class="freeform-placeholder__default" />
     </slot>
@@ -63,15 +75,20 @@ const placeholderOrder = computed(() => {
 
 <style>
 .freeform-placeholder {
+  position: relative;
   pointer-events: none;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  align-self: flex-start !important;
+  box-sizing: border-box;
 }
 
 .freeform-placeholder__default {
-  width: 100%;
-  height: 100%;
-  min-height: 60px;
+  position: absolute;
+  inset: 0;
   border: 2px dashed rgba(59, 130, 246, 0.5);
   border-radius: 8px;
   background: rgba(59, 130, 246, 0.1);
+  box-sizing: border-box;
 }
 </style>

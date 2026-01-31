@@ -256,7 +256,15 @@ onUnmounted(() => {
           :count="dragItems.length"
           :position="dragPosition"
           :start-position="dragStartPosition"
-        />
+        >
+          <!-- Default ghost: looks like item but transparent -->
+          <div class="freeform-ghost-default">
+            <span class="freeform-ghost-default__label">{{ dragItems[0]?.id }}</span>
+            <span v-if="dragItems.length > 1" class="freeform-ghost-default__badge">
+              +{{ dragItems.length - 1 }}
+            </span>
+          </div>
+        </slot>
       </div>
     </Teleport>
   </div>
@@ -265,5 +273,36 @@ onUnmounted(() => {
 <style>
 .freeform-container {
   position: relative;
+}
+
+/* Default ghost styling - looks like item but transparent */
+.freeform-ghost-default {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+  background: rgba(243, 244, 246, 0.9);
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(4px);
+}
+
+.freeform-ghost-default__label {
+  font-weight: 500;
+  color: #374151;
+}
+
+.freeform-ghost-default__badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  background: #3b82f6;
+  border-radius: 12px;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
 }
 </style>

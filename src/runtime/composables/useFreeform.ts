@@ -11,6 +11,8 @@ export interface FreeformContext {
   dropIndex: Ref<number | null>
   dragSourceIndex: Ref<number | null>
   currentDropTarget: Ref<DropTarget | null>
+  /** Size of the first dragged item (for placeholder sizing) */
+  draggedItemSize: Ref<{ width: number, height: number } | null>
   registerItem: (id: string, element: HTMLElement) => void
   unregisterItem: (id: string) => void
   registerDropZone: (id: string, element: HTMLElement, item?: FreeformItemData, accept?: (items: FreeformItemData[]) => boolean) => void
@@ -164,6 +166,7 @@ export function createFreeformContext() {
   const dropIndex = ref<number | null>(null)
   const dragSourceIndex = ref<number | null>(null)
   const currentDropTarget = ref<DropTarget | null>(null)
+  const draggedItemSize = ref<{ width: number, height: number } | null>(null)
 
   const dragState = ref<DragState>({
     active: false,
@@ -220,6 +223,13 @@ export function createFreeformContext() {
     dropIndex.value = null // Will be set in updateDropTarget when threshold is passed
 
     const startPos: Position = { x: event.clientX, y: event.clientY }
+
+    // Measure the dragged item's size for placeholder
+    const itemElement = itemElements.get(item.id)
+    if (itemElement) {
+      const rect = itemElement.getBoundingClientRect()
+      draggedItemSize.value = { width: rect.width, height: rect.height }
+    }
 
     dragState.value = {
       active: true,
@@ -402,6 +412,7 @@ export function createFreeformContext() {
     dragSourceIndex.value = null
     dropIndex.value = null
     currentDropTarget.value = null
+    draggedItemSize.value = null
   }
 
   function getVisualIndex(itemId: string): number {
@@ -511,6 +522,7 @@ export function createFreeformContext() {
     dropIndex,
     dragSourceIndex,
     currentDropTarget,
+    draggedItemSize,
     registerItem: (id, element) => itemElements.set(id, element),
     unregisterItem: id => itemElements.delete(id),
     registerDropZone,

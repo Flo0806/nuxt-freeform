@@ -125,12 +125,44 @@ function onClick(event: MouseEvent) {
       :is-container="isContainer"
       :drop-target="isDropTarget"
       :drop-accepted="isDropAccepted"
-    />
+    >
+      <!-- Default item rendering -->
+      <div class="freeform-item-default">
+        {{ item.id }}
+      </div>
+    </slot>
   </div>
 </template>
 
 <style>
 .freeform-item {
   touch-action: none;
+  align-self: flex-start;
+}
+
+/* Default item styling */
+.freeform-item-default {
+  padding: 16px 24px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  font-weight: 500;
+  color: #374151;
+  transition: all 0.15s ease;
+}
+
+.freeform-item--selected .freeform-item-default {
+  background: #dbeafe;
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
+.freeform-item--drop-target.freeform-item--drop-accepted .freeform-item-default {
+  background: #dcfce7;
+  box-shadow: 0 0 0 2px #22c55e;
+  transform: scale(1.02);
+}
+
+.freeform-item--drop-target.freeform-item--drop-rejected .freeform-item-default {
+  background: #fee2e2;
+  box-shadow: 0 0 0 2px #ef4444;
 }
 </style>
