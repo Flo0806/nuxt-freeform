@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FreeformItemData } from '../../src/runtime/types'
+import type { FreeformItemData } from 'nuxt-freeform'
 
 interface FileItem extends FreeformItemData {
   name: string

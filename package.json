@@ -1,81 +1,22 @@
 {
-  "name": "nuxt-freeform",
-  "version": "0.1.0",
-  "description": "Desktop-like drag & drop for Nuxt - Lasso selection, grid layout, drop zones, fully customizable",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Flo0806/nuxt-freeform.git"
-  },
-  "homepage": "https://github.com/Flo0806/nuxt-freeform#readme",
-  "bugs": {
-    "url": "https://github.com/Flo0806/nuxt-freeform/issues"
-  },
-  "keywords": [
-    "nuxt",
-    "nuxt-module",
-    "vue",
-    "drag-and-drop",
-    "dnd",
-    "sortable",
-    "grid",
-    "lasso",
-    "selection",
-    "freeform",
-    "file-manager",
-    "kanban"
-  ],
-  "author": "Florian Heuberger <fh@flogersoft.de>",
-  "license": "MIT",
+  "name": "nuxt-freeform-root",
+  "version": "1.0.0",
+  "private": true,
   "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/types.d.mts",
-      "import": "./dist/module.mjs"
-    }
-  },
-  "main": "./dist/module.mjs",
-  "typesVersions": {
-    "*": {
-      ".": [
-        "./dist/types.d.mts"
-      ]
-    }
-  },
-  "files": [
-    "dist"
-  ],
-  "workspaces": [
-    "playground"
-  ],
   "scripts": {
-    "prepack": "nuxt-module-build build",
-    "dev": "npm run dev:prepare && nuxt dev playground",
-    "dev:build": "nuxt build playground",
-    "dev:prepare": "nuxt-module-build build --stub && nuxt-module-build prepare && nuxt prepare playground",
-    "release": "npm run lint && npm run test && npm run prepack && changelogen --release && npm publish && git push --follow-tags",
-    "lint": "eslint .",
-    "test": "vitest run",
-    "test:watch": "vitest watch",
-    "test:types": "vue-tsc --noEmit && cd playground && vue-tsc --noEmit"
-  },
-  "dependencies": {
-    "@nuxt/kit": "^4.3.0"
+    "dev": "pnpm --filter nuxt-freeform dev",
+    "dev:prepare": "pnpm --filter nuxt-freeform dev:prepare",
+    "build": "pnpm --filter nuxt-freeform build",
+    "docs:dev": "pnpm --filter nuxt-freeform-docs dev",
+    "docs:build": "pnpm --filter nuxt-freeform-docs build",
+    "docs:preview": "pnpm --filter nuxt-freeform-docs preview",
+    "lint": "pnpm --filter nuxt-freeform lint",
+    "test": "pnpm --filter nuxt-freeform test",
+    "release": "pnpm build && changelogen --release && pnpm --filter nuxt-freeform publish && git push --follow-tags"
   },
   "devDependencies": {
-    "@nuxt/a11y": "1.0.0-alpha.1",
-    "@nuxt/devtools": "^3.1.1",
-    "@nuxt/eslint": "1.13.0",
-    "@nuxt/eslint-config": "^1.13.0",
-    "@nuxt/module-builder": "^1.0.2",
-    "@nuxt/schema": "^4.3.0",
-    "@nuxt/test-utils": "^3.23.0",
     "@types/node": "latest",
-    "@unocss/nuxt": "^66.6.0",
-    "changelogen": "^0.6.2",
-    "eslint": "^9.39.2",
-    "nuxt": "^4.3.0",
-    "typescript": "~5.9.3",
-    "vitest": "^4.0.18",
-    "vue-tsc": "^3.2.4"
-  }
+    "changelogen": "^0.6.2"
+  },
+  "packageManager": "pnpm@10.11.0"
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FreeformItemData, DropEventPayload } from '../../src/runtime/types'
+import type { FreeformItemData, DropEventPayload } from 'nuxt-freeform'
 
 interface FileItem extends FreeformItemData {
   name: string

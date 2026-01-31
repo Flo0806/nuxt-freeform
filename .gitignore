@@ -19,6 +19,10 @@ dist
 # Nuxt
 .nuxt
 .output
+
+# VitePress
+.vitepress/cache
+.vitepress/dist
 .data
 .vercel_build_output
 .build-*
@@ -57,3 +61,6 @@ Temporary Items
 
 # Claude
 CLAUDE.md
+
+# Local scripts
+.scripts/

@@ -1,0 +1,19 @@
+{
+  "name": "nuxt-freeform-playground",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "prepare": "nuxt prepare"
+  },
+  "dependencies": {
+    "nuxt-freeform": "workspace:*"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "^3.1.1",
+    "@unocss/nuxt": "^66.6.0",
+    "nuxt": "^4.3.0"
+  }
+}

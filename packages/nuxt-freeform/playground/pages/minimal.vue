@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FreeformItemData } from '../../src/runtime/types'
+import type { FreeformItemData } from 'nuxt-freeform'
 
 // Minimal data - just id and type
 const items = ref<FreeformItemData[]>([

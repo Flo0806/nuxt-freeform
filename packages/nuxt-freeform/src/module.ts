@@ -1,5 +1,17 @@
 import { defineNuxtModule, addComponent, addImports, createResolver } from '@nuxt/kit'
 
+// Re-export types for consumers
+export type {
+  FreeformItemData,
+  DropEventPayload,
+  DragState,
+  SelectionState,
+  Position,
+  Rect,
+  DropTarget,
+  DropTargetType,
+} from './runtime/types'
+
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ModuleOptions {}
 

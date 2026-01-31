@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import type { FreeformItemData } from '../../src/runtime/types'
-import { useAutoScroll } from '../../src/runtime/composables/useAutoScroll'
+import type { FreeformItemData } from 'nuxt-freeform'
 
 interface FileItem extends FreeformItemData {
   name: string
