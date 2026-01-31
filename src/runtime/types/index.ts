@@ -1,3 +1,5 @@
+import type { InjectionKey, Ref } from 'vue'
+
 // =============================================================================
 // CORE TYPES
 // =============================================================================
@@ -273,6 +275,30 @@ export interface FreeformContext<T extends FreeformItemData = FreeformItemData> 
   clearSelection: () => void
   startDrag: (items: T[], event: PointerEvent) => void
 }
+
+/**
+ * Registered Freeform data for FreeformSelection
+ */
+export interface RegisteredFreeform<T extends FreeformItemData = FreeformItemData> {
+  items: Ref<T[]>
+  itemElements: Map<string, HTMLElement>
+  disabled: Ref<boolean>
+  selectionState: Ref<SelectionState<T>>
+}
+
+/**
+ * Selection context provided by FreeformSelection
+ */
+export interface SelectionContext<T extends FreeformItemData = FreeformItemData> {
+  registerFreeform: (ctx: RegisteredFreeform<T>) => void
+  unregisterFreeform: () => void
+  selectionState: Ref<SelectionState<T>>
+}
+
+/**
+ * Injection key for selection context
+ */
+export const SELECTION_CONTEXT_KEY: InjectionKey<SelectionContext> = Symbol('freeform-selection-context')
 
 // =============================================================================
 // UTILITY TYPES

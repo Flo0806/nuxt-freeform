@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { watch, onMounted, onUnmounted, computed } from 'vue'
+import { watch, onMounted, onUnmounted, computed, inject, useAttrs } from 'vue'
 import type { FreeformItemData } from '../types'
+import { SELECTION_CONTEXT_KEY } from '../types'
 import { createFreeformContext } from '../composables/useFreeform'
 
 const props = withDefaults(defineProps<{
@@ -26,9 +27,13 @@ const {
   disabled: contextDisabled,
   dropIndex,
   dragSourceIndex,
+  itemElements,
   handlePointerMove,
   handlePointerUp,
 } = createFreeformContext()
+
+// Register with FreeformSelection if present
+const selectionContext = inject(SELECTION_CONTEXT_KEY, null)
 
 // Sync props to context
 watch(() => props.modelValue, (newItems) => {
@@ -39,27 +44,27 @@ watch(() => props.disabled, (val) => {
   contextDisabled.value = val
 }, { immediate: true })
 
-// Emit events
+// Check if drag-move listener is bound (optimization)
+const attrs = useAttrs()
+const hasDragMoveListener = computed(() => 'onDrag-move' in attrs || 'onDragMove' in attrs)
+
+// Emit select event
 watch(() => selectionState.value.items, (selected) => {
   emit('select', [...selected])
 }, { deep: true })
 
-// Emit drag events
+// Emit drag-start event
 watch(() => dragState.value.thresholdPassed, (passed) => {
   if (passed) {
     emit('drag-start', [...dragState.value.items])
   }
 })
 
+// Emit drag-move event (only if listener is bound)
 watch(() => dragState.value.currentPosition, (pos) => {
+  if (!hasDragMoveListener.value) return
   if (dragState.value.thresholdPassed && pos) {
     emit('drag-move', [...dragState.value.items], { ...pos })
-  }
-}, { deep: true })
-
-watch(() => dragState.value.active, (active, wasActive) => {
-  if (wasActive && !active && dragState.value.items.length === 0) {
-    // Drag ended (items are cleared after drag ends)
   }
 })
 
@@ -82,6 +87,9 @@ const isDragging = computed(() => dragState.value.thresholdPassed)
 const dragItems = computed(() => dragState.value.items)
 const dragPosition = computed(() => dragState.value.currentPosition)
 const dragStartPosition = computed(() => dragState.value.startPosition)
+
+// Lasso state from selection context (if present)
+const isLassoActive = computed(() => selectionContext?.selectionState.value.lassoActive ?? false)
 
 // Global pointer event listeners
 function onPointerMove(event: PointerEvent) {
@@ -139,12 +147,27 @@ onMounted(() => {
   document.addEventListener('pointermove', onPointerMove)
   document.addEventListener('pointerup', onPointerUp)
   document.addEventListener('pointercancel', onPointerUp)
+
+  // Register with FreeformSelection if present
+  if (selectionContext) {
+    selectionContext.registerFreeform({
+      items,
+      itemElements,
+      disabled: contextDisabled,
+      selectionState,
+    })
+  }
 })
 
 onUnmounted(() => {
   document.removeEventListener('pointermove', onPointerMove)
   document.removeEventListener('pointerup', onPointerUp)
   document.removeEventListener('pointercancel', onPointerUp)
+
+  // Unregister from FreeformSelection
+  if (selectionContext) {
+    selectionContext.unregisterFreeform()
+  }
 })
 </script>
 
@@ -155,6 +178,7 @@ onUnmounted(() => {
       :selected="selectionState.items"
       :is-dragging="isDragging"
       :drag-items="dragItems"
+      :is-lasso-active="isLassoActive"
     />
 
     <!-- Drag Ghost (user provides via slot) -->

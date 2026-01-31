@@ -41,6 +41,9 @@ const visualIndex = computed(() =>
 function onPointerDown(event: PointerEvent) {
   if (props.disabled) return
 
+  // Stop propagation so container doesn't start lasso
+  event.stopPropagation()
+
   // Handle selection on pointer down
   // Ctrl/Cmd+click toggles selection
   if (event.ctrlKey || event.metaKey) {
@@ -75,6 +78,7 @@ function onClick(event: MouseEvent) {
       'freeform-item--dragging': isDragging,
       'freeform-item--disabled': disabled,
     }"
+    data-freeform-item
     :data-index="actualIndex"
     :data-visual-index="visualIndex"
     @pointerdown="onPointerDown"
