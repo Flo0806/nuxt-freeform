@@ -102,23 +102,16 @@ function onPointerMove(event: PointerEvent) {
 function reorderItems(draggedItems: FreeformItemData[], targetIndex: number): FreeformItemData[] {
   const draggedIds = new Set(draggedItems.map(i => i.id))
 
-  // Find first dragged item's original index
-  const firstDraggedIdx = items.value.findIndex(i => draggedIds.has(i.id))
-
   // Keep dragged items in their original array order
   const itemsToMove = items.value.filter(i => draggedIds.has(i.id))
   const remaining = items.value.filter(i => !draggedIds.has(i.id))
 
-  // Find the target item and its position in remaining array
-  const targetItem = items.value[targetIndex]
-  let insertAt = remaining.length
-
-  if (targetItem) {
-    const foundIdx = remaining.findIndex(i => i.id === targetItem.id)
-    if (foundIdx !== -1) {
-      // If dragging forward (to higher index): insert AFTER target
-      // If dragging backward (to lower index): insert BEFORE target
-      insertAt = firstDraggedIdx < targetIndex ? foundIdx + 1 : foundIdx
+  // Calculate insert position in remaining array
+  // Count how many non-dragged items are before targetIndex
+  let insertAt = 0
+  for (let i = 0; i < targetIndex && i < items.value.length; i++) {
+    if (!draggedIds.has(items.value[i]!.id)) {
+      insertAt++
     }
   }
 
