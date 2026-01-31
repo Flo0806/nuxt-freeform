@@ -11,6 +11,7 @@
     "docs:build": "pnpm --filter nuxt-freeform-docs build",
     "docs:preview": "pnpm --filter nuxt-freeform-docs preview",
     "lint": "pnpm --filter nuxt-freeform lint",
+    "lint:fix": "pnpm --filter nuxt-freeform lint:fix",
     "test": "pnpm --filter nuxt-freeform test",
     "release": "pnpm build && changelogen --release && pnpm --filter nuxt-freeform publish && git push --follow-tags"
   },

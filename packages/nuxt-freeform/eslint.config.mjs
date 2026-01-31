@@ -12,9 +12,13 @@ export default createConfigForNuxt({
   dirs: {
     src: [
       './src',
+      './playground',
     ],
   },
 })
-  .append(
-    // your custom flat config here...
-  )
+  .append({
+    files: ['playground/pages/**/*.vue'],
+    rules: {
+      'vue/multi-word-component-names': 'off',
+    },
+  })

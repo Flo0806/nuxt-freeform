@@ -123,7 +123,10 @@ function onDropInto(draggedItems: FreeformItemData[], container: FreeformItemDat
         <template #drag-ghost="{ items: dragItems, count }">
           <div class="flex flex-col items-center justify-center p-4 rounded-lg bg-blue-600 shadow-xl">
             <span class="text-3xl mb-1">{{ (dragItems[0] as FileItem)?.icon }}</span>
-            <span v-if="count > 1" class="text-white text-xs">+{{ count - 1 }} more</span>
+            <span
+              v-if="count > 1"
+              class="text-white text-xs"
+            >+{{ count - 1 }} more</span>
           </div>
         </template>
       </TheFreeform>

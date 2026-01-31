@@ -109,7 +109,10 @@ function acceptNothing() {
 
     <div class="flex gap-6">
       <!-- List A -->
-      <FreeformDropZone id="list-a" class="flex-1">
+      <FreeformDropZone
+        id="list-a"
+        class="flex-1"
+      >
         <template #default="{ isOver, isAccepted }">
           <div
             class="p-4 rounded-xl border-2 transition-all min-h-[300px]"
@@ -122,7 +125,12 @@ function acceptNothing() {
             <h2 class="text-lg font-semibold text-white mb-4">
               List A ({{ listA.length }})
             </h2>
-            <TheFreeform v-model="listA" drop-zone-id="list-a" class="flex flex-wrap gap-2" @drop-to-zone="onDropToZone">
+            <TheFreeform
+              v-model="listA"
+              drop-zone-id="list-a"
+              class="flex flex-wrap gap-2"
+              @drop-to-zone="onDropToZone"
+            >
               <FreeformItem
                 v-for="item in listA"
                 :key="item.id"
@@ -138,7 +146,10 @@ function acceptNothing() {
                 </template>
               </FreeformItem>
 
-              <FreeformPlaceholder v-slot="{ count }" class="w-24">
+              <FreeformPlaceholder
+                v-slot="{ count }"
+                class="w-24"
+              >
                 <div class="px-4 py-2 rounded-lg border-2 border-dashed border-white/30 text-white/30 text-center">
                   {{ count }}
                 </div>
@@ -155,7 +166,10 @@ function acceptNothing() {
       </FreeformDropZone>
 
       <!-- List B -->
-      <FreeformDropZone id="list-b" class="flex-1">
+      <FreeformDropZone
+        id="list-b"
+        class="flex-1"
+      >
         <template #default="{ isOver, isAccepted }">
           <div
             class="p-4 rounded-xl border-2 transition-all min-h-[300px]"
@@ -168,7 +182,13 @@ function acceptNothing() {
             <h2 class="text-lg font-semibold text-white mb-4">
               List B ({{ listB.length }})
             </h2>
-            <TheFreeform v-model="listB" drop-zone-id="list-b" class="flex flex-wrap gap-2" @drop-to-zone="onDropToZone" @drop-into="onDropIntoContainer">
+            <TheFreeform
+              v-model="listB"
+              drop-zone-id="list-b"
+              class="flex flex-wrap gap-2"
+              @drop-to-zone="onDropToZone"
+              @drop-into="onDropIntoContainer"
+            >
               <FreeformItem
                 v-for="item in listB"
                 :key="item.id"
@@ -189,7 +209,10 @@ function acceptNothing() {
                 </template>
               </FreeformItem>
 
-              <FreeformPlaceholder v-slot="{ count }" class="w-24">
+              <FreeformPlaceholder
+                v-slot="{ count }"
+                class="w-24"
+              >
                 <div class="px-4 py-2 rounded-lg border-2 border-dashed border-white/30 text-white/30 text-center">
                   {{ count }}
                 </div>
@@ -206,7 +229,11 @@ function acceptNothing() {
       </FreeformDropZone>
 
       <!-- List C (blocked) -->
-      <FreeformDropZone id="list-c" class="flex-1" :accept="acceptNothing">
+      <FreeformDropZone
+        id="list-c"
+        class="flex-1"
+        :accept="acceptNothing"
+      >
         <template #default="{ isOver, isAccepted }">
           <div
             class="p-4 rounded-xl border-2 transition-all min-h-[300px]"
@@ -219,7 +246,12 @@ function acceptNothing() {
             <h2 class="text-lg font-semibold text-white mb-4">
               List C - Blocked ({{ listC.length }})
             </h2>
-            <TheFreeform v-model="listC" drop-zone-id="list-c" class="flex flex-wrap gap-2" @drop-to-zone="onDropToZone">
+            <TheFreeform
+              v-model="listC"
+              drop-zone-id="list-c"
+              class="flex flex-wrap gap-2"
+              @drop-to-zone="onDropToZone"
+            >
               <FreeformItem
                 v-for="item in listC"
                 :key="item.id"
@@ -235,7 +267,10 @@ function acceptNothing() {
                 </template>
               </FreeformItem>
 
-              <FreeformPlaceholder v-slot="{ count }" class="w-24">
+              <FreeformPlaceholder
+                v-slot="{ count }"
+                class="w-24"
+              >
                 <div class="px-4 py-2 rounded-lg border-2 border-dashed border-white/30 text-white/30 text-center">
                   {{ count }}
                 </div>
@@ -254,12 +289,20 @@ function acceptNothing() {
 
     <!-- Event Log -->
     <div class="mt-8 bg-slate-800 rounded-lg border border-white/10 p-4 max-w-xl">
-      <h3 class="text-white font-medium mb-2">Event Log</h3>
+      <h3 class="text-white font-medium mb-2">
+        Event Log
+      </h3>
       <div class="space-y-1 font-mono text-xs text-white/60">
-        <div v-for="(entry, idx) in eventLog" :key="idx">
+        <div
+          v-for="(entry, idx) in eventLog"
+          :key="idx"
+        >
           {{ entry }}
         </div>
-        <div v-if="eventLog.length === 0" class="text-white/30 italic">
+        <div
+          v-if="eventLog.length === 0"
+          class="text-white/30 italic"
+        >
           Drag items between lists...
         </div>
       </div>
