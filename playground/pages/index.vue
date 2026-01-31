@@ -5,6 +5,7 @@ const routes = [
   { name: 'DropZones', path: '/dropzones', image: '/img/logo-drop-zone.png', description: 'Drag between multiple lists' },
   { name: 'Scrolling', path: '/scrolling', image: '/img/logo-scroll.png', description: 'Auto-scroll near edges' },
   { name: 'Desktop', path: '/desktop', image: '/img/logo-desktop.png', description: 'Full desktop experience' },
+  { name: 'Freeform', path: '/freeform', image: '/img/logo-freeform.png', description: 'Grid-based free positioning' },
 ]
 </script>
 
