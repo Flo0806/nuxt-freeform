@@ -1,7 +1,9 @@
 <template>
-  <div class="font-sans">
+  <div class="font-sans bg-slate-900">
     <AppHeader />
-    <NuxtPage />
+    <main class="pt-12">
+      <NuxtPage />
+    </main>
   </div>
 </template>
 
@@ -12,5 +14,6 @@
 
 body {
   font-family: var(--font-sans);
+  margin:0;
 }
 </style>

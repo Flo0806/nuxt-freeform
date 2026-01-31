@@ -29,37 +29,84 @@ function onSelect(selectedItems: FreeformItemData[]) {
 </script>
 
 <template>
-  <div class="p-8">
-    <h1 class="text-2xl font-bold mb-4">
-      nuxt-freeform Playground
+  <div class="px-8 py-6 min-h-[calc(100vh-96px)]">
+    <h1 class="text-2xl font-bold mb-2 text-white">
+      Basics
     </h1>
 
-    <p class="mb-4 text-gray-500">
-      Selected: <span class="text-gray-800 font-medium">{{ selected.map(i => i.name).join(', ') || 'none' }}</span>
-      <br>
-      <small>Click to select, Ctrl/Cmd+Click for multi-select</small>
-    </p>
+    <div class="mb-6 text-sm text-white/60">
+      <p class="mb-2">
+        <span class="text-white/80 font-medium">Try it out:</span>
+      </p>
+      <ul class="list-disc list-inside space-y-1 ml-2">
+        <li>Drag an item to reorder it in the grid</li>
+        <li>Click to select, <kbd class="px-1.5 py-0.5 bg-white/10 rounded text-xs">Ctrl</kbd>/<kbd class="px-1.5 py-0.5 bg-white/10 rounded text-xs">Cmd</kbd>+Click for multi-select</li>
+        <li>Draw a selection rectangle (lasso) on empty space to select multiple items</li>
+        <li>Drag selected items together to reposition them</li>
+      </ul>
+      <p class="mt-3">
+        Selected: <span class="text-white font-medium">{{ selected.map(i => i.name).join(', ') || 'none' }}</span>
+      </p>
+    </div>
 
-    <TheFreeform
-      v-model="items"
-      class="grid grid-cols-4 gap-4 pa-10"
-      @select="onSelect"
-    >
-      <FreeformItem
-        v-for="item in items"
-        :key="item.id"
-        :item="item"
+    <FreeformSelection @select="onSelect">
+      <TheFreeform
+        v-model="items"
+        class="flex flex-wrap gap-4 p-10 bg-slate-800 rounded-xl"
       >
-        <template #default="{ selected: isSelected }">
+        <FreeformItem
+          v-for="item in items"
+          :key="item.id"
+          :item="item"
+          class="w-[calc(25%-12px)]"
+        >
+          <template #default="{ selected: isSelected }">
+            <div
+              class="p-4 rounded-lg text-white font-medium transition-all"
+              :class="isSelected ? 'ring-4 ring-blue-500 scale-105' : ''"
+              :style="{ backgroundColor: item.color }"
+            >
+              {{ item.name }}
+            </div>
+          </template>
+        </FreeformItem>
+
+        <FreeformPlaceholder
+          v-slot="{ count }"
+          class="w-[calc(25%-12px)]"
+        >
+          <div class="p-4 rounded-lg border-2 border-dashed border-white/30 bg-white/5">
+            <span class="text-white/40 text-sm">{{ count }}</span>
+          </div>
+        </FreeformPlaceholder>
+
+        <template #drag-ghost="{ items: dragItems, count }">
           <div
-            class="p-4 rounded-lg text-white font-medium transition-all"
-            :class="isSelected ? 'ring-4 ring-blue-500 scale-105' : ''"
-            :style="{ backgroundColor: item.color }"
+            class="w-40 p-4 rounded-lg text-white font-medium shadow-2xl opacity-80"
+            :style="{ backgroundColor: (dragItems[0] as MyItem)?.color }"
           >
-            {{ item.name }}
+            {{ (dragItems[0] as MyItem)?.name }}
+            <span
+              v-if="count > 1"
+              class="ml-2 px-2 py-0.5 bg-black/30 rounded text-xs"
+            >
+              +{{ count - 1 }}
+            </span>
           </div>
         </template>
-      </FreeformItem>
-    </TheFreeform>
+      </TheFreeform>
+
+      <!-- Custom Lasso Style -->
+      <template #lasso="{ selectedCount }">
+        <div class="relative w-full h-full border-2 border-dashed border-blue-500 bg-blue-500/10 rounded">
+          <span
+            v-if="selectedCount > 0"
+            class="absolute -top-6 left-1 px-2 py-0.5 bg-blue-500 text-white text-xs font-medium rounded"
+          >
+            {{ selectedCount }} selected
+          </span>
+        </div>
+      </template>
+    </FreeformSelection>
   </div>
 </template>
