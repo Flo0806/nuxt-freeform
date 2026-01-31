@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { watch, onMounted, onUnmounted, computed, inject, useAttrs, ref } from 'vue'
+import { watch, onMounted, onUnmounted, computed, inject, useAttrs } from 'vue'
 import type { FreeformItemData, DropEventPayload } from '../types'
 import { SELECTION_CONTEXT_KEY } from '../types'
 import { createFreeformContext } from '../composables/useFreeform'
-import { useDropZoneRegistry, type DropZoneEntry } from '../composables/useDropZoneRegistry'
+import { useExternalDrag } from '../composables/useExternalDrag'
+import { useExternalDrop } from '../composables/useExternalDrop'
 
 const props = withDefaults(defineProps<{
   modelValue: FreeformItemData[]
@@ -29,9 +30,6 @@ const emit = defineEmits<{
   'drop-to-zone': [items: FreeformItemData[], zoneId: string, index: number, containerId: string | null]
 }>()
 
-const dropZoneRegistry = useDropZoneRegistry()
-const currentExternalZone = ref<DropZoneEntry | null>(null)
-
 const {
   items,
   dragState,
@@ -45,6 +43,10 @@ const {
   handlePointerUp,
   handleExternalDrop,
 } = createFreeformContext()
+
+// === CROSS-LIST DRAG & DROP ===
+const { detectExternalZone, finishExternalDrag } = useExternalDrag(props.dropZoneId)
+useExternalDrop({ dropZoneId: props.dropZoneId, dragState, handleExternalDrop })
 
 // Register with FreeformSelection if present
 const selectionContext = inject(SELECTION_CONTEXT_KEY, null)
@@ -82,31 +84,6 @@ watch(() => dragState.value.currentPosition, (pos) => {
   }
 })
 
-// Track if we're receiving an external drop (not our own drag)
-const isReceivingExternal = computed(() =>
-  props.dropZoneId
-  && dropZoneRegistry.hoveredZoneId.value === props.dropZoneId
-  && dropZoneRegistry.hoveredItems.value.length > 0
-  && !dragState.value.active, // Not receiving if we're the source
-)
-
-// Handle external drops - delegate to centralized logic
-// IMPORTANT: Only the receiving Freeform should update the global registry!
-watch([() => dropZoneRegistry.dragPosition.value, isReceivingExternal], ([pos, receiving]) => {
-  // Only update if WE are the target - don't clear if someone else is receiving
-  if (!receiving) {
-    // Just clear local state, don't touch global registry
-    handleExternalDrop(null, [])
-    return
-  }
-
-  const result = handleExternalDrop(pos, dropZoneRegistry.hoveredItems.value)
-
-  // Update registry so source Freeform can read the target info
-  dropZoneRegistry.setTargetDropIndex(result.dropIndex)
-  dropZoneRegistry.setTargetContainer(result.containerId)
-}, { immediate: true })
-
 // Ghost position
 const ghostStyle = computed(() => {
   if (!dragState.value.thresholdPassed || !dragState.value.currentPosition) {
@@ -134,25 +111,9 @@ const isLassoActive = computed(() => selectionContext?.selectionState.value.lass
 function onPointerMove(event: PointerEvent) {
   handlePointerMove(event)
 
-  // Check for external drop zones (not our own)
+  // Detect external drop zones while dragging
   if (dragState.value.thresholdPassed) {
-    const pos = { x: event.clientX, y: event.clientY }
-    let zone = dropZoneRegistry.findAtPosition(pos.x, pos.y)
-
-    // Ignore our own drop zone
-    if (zone && props.dropZoneId && zone.id === props.dropZoneId) {
-      zone = null
-    }
-
-    if (zone !== currentExternalZone.value) {
-      currentExternalZone.value = zone
-      // Update global hover state for DropZone components
-      dropZoneRegistry.setHovered(zone?.id ?? null, dragState.value.items, pos)
-    }
-    else if (zone) {
-      // Same zone, just update position
-      dropZoneRegistry.updatePosition(pos)
-    }
+    detectExternalZone({ x: event.clientX, y: event.clientY }, dragState.value.items)
   }
 }
 
@@ -183,28 +144,23 @@ function onPointerUp(event: PointerEvent) {
   if (dragState.value.thresholdPassed) {
     const draggedItems = [...dragState.value.items]
     const dropTarget = currentDropTarget.value
-    const externalZone = currentExternalZone.value
 
     emit('drag-end', draggedItems)
 
     // Drop to external zone (highest priority)
-    if (externalZone) {
-      const accepted = externalZone.accept ? externalZone.accept(draggedItems) : true
-      if (accepted) {
-        const containerId = dropZoneRegistry.targetContainerId.value
-
-        emit('drop-to-zone', draggedItems, externalZone.id, dropZoneRegistry.targetDropIndex.value ?? 0, containerId)
-        emit('drop', {
-          items: draggedItems,
-          target: null,
-          position: dragState.value.currentPosition!,
-          dropType: containerId ? 'container' : 'zone',
-          targetZoneId: externalZone.id,
-          targetContainerId: containerId,
-        })
-      }
+    const externalDrop = finishExternalDrag(draggedItems)
+    if (externalDrop) {
+      emit('drop-to-zone', draggedItems, externalDrop.zoneId, externalDrop.dropIndex, externalDrop.containerId)
+      emit('drop', {
+        items: draggedItems,
+        target: null,
+        position: dragState.value.currentPosition!,
+        dropType: externalDrop.containerId ? 'container' : 'zone',
+        targetZoneId: externalDrop.zoneId,
+        targetContainerId: externalDrop.containerId,
+      })
     }
-    // Drop into container
+    // Drop into container (internal)
     else if (dropTarget?.type === 'container' && dropTarget.accepted) {
       emit('drop-into', draggedItems, dropTarget.item)
       emit('drop', {
@@ -240,9 +196,6 @@ function onPointerUp(event: PointerEvent) {
     }
   }
 
-  currentExternalZone.value = null
-  dropZoneRegistry.setHovered(null)
-  dropZoneRegistry.setTargetContainer(null)
   handlePointerUp(event)
 }
 
