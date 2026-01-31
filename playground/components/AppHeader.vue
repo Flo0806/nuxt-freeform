@@ -12,6 +12,13 @@ const showBack = computed(() => route.path !== '/')
     >
       ‹
     </NuxtLink>
-    <span class="font-medium">nuxt-freeform</span>
+    <span><img
+      src="/img/nuxt-freeform-logo.png"
+      alt="Logo"
+      width="48"
+      height="48"
+      class="mr-2 align-middle inline-block"
+    ></span>
+    <span class="text-2xl font-semibold">nuxt-freeform</span>
   </header>
 </template>
