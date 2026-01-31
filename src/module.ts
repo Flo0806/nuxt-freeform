@@ -29,6 +29,10 @@ export default defineNuxtModule<ModuleOptions>({
       name: 'FreeformPlaceholder',
       filePath: resolver.resolve('./runtime/components/FreeformPlaceholder.vue'),
     })
+    addComponent({
+      name: 'FreeformDropZone',
+      filePath: resolver.resolve('./runtime/components/FreeformDropZone.vue'),
+    })
 
     // Auto-import composables
     addImports({

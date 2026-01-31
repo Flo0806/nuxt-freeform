@@ -315,14 +315,20 @@ export function createFreeformContext() {
     currentDropTarget.value = null
   }
 
-  function updateDropTarget(position: Position) {
-    // Container drop detection is handled via mouseenter/mouseleave in FreeformItem
-    // If currently over a container, skip reorder logic
-    if (currentDropTarget.value) return
+  /**
+   * Calculate drop index from cursor position.
+   * Used for both internal drags and external drops.
+   * @param position Cursor position
+   * @param excludeIds IDs to exclude from visible items (dragged items)
+   * @returns The calculated drop index, or null if no change (hysteresis)
+   */
+  function calculateDropIndex(position: Position, excludeIds: Set<string>): number | null {
+    const visibleItems = collectVisibleItems(itemElements, items.value, excludeIds)
 
-    const draggedIds = new Set(dragState.value.items.map(i => i.id))
-    const visibleItems = collectVisibleItems(itemElements, items.value, draggedIds)
-    if (visibleItems.length === 0) return
+    // Empty list - drop at position 0
+    if (visibleItems.length === 0) {
+      return 0
+    }
 
     const rows = sortAndGroupByRow(visibleItems)
 
@@ -338,25 +344,33 @@ export function createFreeformContext() {
 
       // Cursor is above this row -> insert before first item
       if (position.y < rowTop) {
-        dropIndex.value = firstItem.index
-        return
+        return firstItem.index
       }
 
       // Cursor is within this row
       if (position.y >= rowTop && position.y < rowBottom) {
-        const newIndex = findDropIndexInRow(row, position.x)
-        if (newIndex !== null) {
-          dropIndex.value = newIndex
-        }
-        // null = cursor in middle of item (hysteresis, keep current)
-        return
+        return findDropIndexInRow(row, position.x)
       }
     }
 
     // Cursor is below all rows -> insert at the end
     const lastRow = rows[rows.length - 1]
     if (lastRow?.length) {
-      dropIndex.value = lastRow[lastRow.length - 1]!.index + 1
+      return lastRow[lastRow.length - 1]!.index + 1
+    }
+
+    return null
+  }
+
+  function updateDropTarget(position: Position) {
+    // Container drop detection is handled via mouseenter/mouseleave in FreeformItem
+    // If currently over a container, skip reorder logic
+    if (currentDropTarget.value) return
+
+    const draggedIds = new Set(dragState.value.items.map(i => i.id))
+    const newIndex = calculateDropIndex(position, draggedIds)
+    if (newIndex !== null) {
+      dropIndex.value = newIndex
     }
   }
 
@@ -388,6 +402,16 @@ export function createFreeformContext() {
       return actualIndex
     }
 
+    // External drop (dragSourceIndex === -1): items coming from outside
+    if (dragSourceIndex.value === -1) {
+      // Items at or after dropIndex shift right to make room
+      if (actualIndex >= dropIndex.value) {
+        return actualIndex + 1 // Shift right by 1 (placeholder takes 1 slot)
+      }
+      return actualIndex
+    }
+
+    // Internal drag
     const draggedItems = dragState.value.items
     const draggedIds = new Set(draggedItems.map(i => i.id))
 
@@ -402,6 +426,62 @@ export function createFreeformContext() {
     return compactedIndex >= placeholderPos
       ? compactedIndex + draggedItems.length
       : compactedIndex
+  }
+
+  /**
+   * Handle external drop - called when items from another Freeform are dragged over this one.
+   * Sets up state for external drop visualization.
+   */
+  function handleExternalDrop(position: Position | null, incomingItems: FreeformItemData[]) {
+    if (!position || incomingItems.length === 0) {
+      // Clear external drop state
+      if (!dragState.value.active) {
+        dropIndex.value = null
+        dragSourceIndex.value = null
+        currentDropTarget.value = null
+      }
+      return { dropIndex: null, containerId: null }
+    }
+
+    // Mark as external drop
+    dragSourceIndex.value = -1
+
+    // Check for container drop first
+    let foundContainer: FreeformItemData | null = null
+    for (const [, entry] of dropZones) {
+      if (!entry.item) continue
+      const rect = entry.element.getBoundingClientRect()
+      // 20px edge padding like internal drag
+      if (position.x >= (rect.left + 20) && position.x <= (rect.right - 20)
+        && position.y >= rect.top && position.y <= rect.bottom) {
+        const accepted = entry.accept ? entry.accept(incomingItems) : true
+        if (accepted) {
+          foundContainer = entry.item
+          currentDropTarget.value = {
+            item: entry.item,
+            bounds: { x: rect.left, y: rect.top, width: rect.width, height: rect.height },
+            type: 'container',
+            accepted: true,
+          }
+        }
+        break
+      }
+    }
+
+    if (!foundContainer) {
+      currentDropTarget.value = null
+    }
+
+    // Calculate drop index (empty set = no items to exclude for external drops)
+    const newIndex = calculateDropIndex(position, new Set())
+    if (newIndex !== null) {
+      dropIndex.value = newIndex
+    }
+
+    return {
+      dropIndex: dropIndex.value,
+      containerId: foundContainer?.id ?? null,
+    }
   }
 
   const context: FreeformContext = {
@@ -439,6 +519,7 @@ export function createFreeformContext() {
     dropZones,
     handlePointerMove,
     handlePointerUp,
+    handleExternalDrop,
     getVisualIndex,
   }
 }

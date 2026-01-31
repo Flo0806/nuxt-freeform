@@ -102,7 +102,7 @@ export interface DragEventPayload<T extends FreeformItemData = FreeformItemData>
 /**
  * Type of drop target
  */
-export type DropTargetType = 'reorder' | 'container' | null
+export type DropTargetType = 'reorder' | 'container' | 'zone' | null
 
 /**
  * Drop target information
@@ -144,6 +144,10 @@ export interface DropEventPayload<T extends FreeformItemData = FreeformItemData>
   toIndex?: number
   /** Container item if dropped into a container */
   targetContainer?: T | null
+  /** Zone ID if dropped to external drop zone */
+  targetZoneId?: string
+  /** Container ID if dropped into a container in external zone */
+  targetContainerId?: string | null
   /** Type of drop operation */
   dropType: DropTargetType
 }
