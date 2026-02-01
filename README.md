@@ -9,8 +9,29 @@ Desktop-like drag & drop for Nuxt/Vue. Lasso selection, reorder, drop into conta
 
 **There's no Nuxt module for drag & drop on nuxt.com/modules** - until now.
 
+### Learn more
+**[Documentation](https://nuxt-freeform.fh-softdev.de)**
+
+## Modes
+
+### Desktop
+Lasso selection, multi-select, drag & drop - just like your OS file manager.
+
+<img width="620" alt="Desktop Mode" src="https://github.com/user-attachments/assets/7042faa8-8d3e-44b2-bd6e-ed48fb558d30" />
+
+### Freeform
+Free positioning on a canvas - arrange items anywhere you want.
+
+<img width="620" alt="Freeform Mode" src="https://github.com/user-attachments/assets/6c04ac3b-c3c5-4c12-89c7-cc518783f092" />
+
+### Lists
+Drag between multiple lists - perfect for Kanban boards and task management.
+
+<img width="620" alt="Lists Mode" src="https://github.com/user-attachments/assets/f929f11b-b038-46d1-8f62-64af557b2555" />
+
 ## Features
 
+- **Zero Dependencies** - Pure Vue magic, no third-party drag & drop libraries
 - **Lasso Selection** - Select multiple items with a selection rectangle, just like on your desktop
 - **Drag & Drop** - Reorder items or drop into containers/folders
 - **Multi-Select** - Ctrl/Cmd+Click to toggle selection, drag multiple items at once
@@ -387,6 +408,12 @@ This module was inspired by the Angular library [ngx-explorer-dnd](https://githu
 ---
 
 Made with ♥️ by Flo0806 · Creator of [nuxt.care](https://nuxt.care)
+
+## Support
+
+If you like this module, give it a ⭐!
+
+<a href="https://www.buymeacoffee.com/flo0806" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="40"></a>
 
 <!-- Badges -->
 [npm-version-src]: https://img.shields.io/npm/v/nuxt-freeform/latest.svg?style=flat&colorA=020420&colorB=00DC82
