@@ -168,6 +168,11 @@ export function createFreeformContext() {
   const currentDropTarget = ref<DropTarget | null>(null)
   const draggedItemSize = ref<{ width: number, height: number } | null>(null)
 
+  // Anti-oscillation: track previous index and cursor position
+  let prevIndex: number | null = null
+  let lastChangePos: Position | null = null
+  const MIN_CURSOR_MOVE = 20 // Pixels cursor must move to allow going back
+
   const dragState = ref<DragState>({
     active: false,
     items: [],
@@ -390,7 +395,21 @@ export function createFreeformContext() {
 
     const draggedIds = new Set(dragState.value.items.map(i => i.id))
     const newIndex = calculateDropIndex(position, draggedIds)
-    if (newIndex !== null) {
+
+    if (newIndex !== null && newIndex !== dropIndex.value) {
+      // Detect oscillation: trying to go back where we just came from?
+      if (prevIndex === newIndex && lastChangePos) {
+        const dx = Math.abs(position.x - lastChangePos.x)
+        const dy = Math.abs(position.y - lastChangePos.y)
+        // Only block if cursor barely moved (real oscillation from DOM shift)
+        if (dx < MIN_CURSOR_MOVE && dy < MIN_CURSOR_MOVE) {
+          return // Block flip-flop
+        }
+      }
+
+      // Track for oscillation detection
+      prevIndex = dropIndex.value
+      lastChangePos = { ...position }
       dropIndex.value = newIndex
     }
   }
@@ -413,6 +432,8 @@ export function createFreeformContext() {
     dropIndex.value = null
     currentDropTarget.value = null
     draggedItemSize.value = null
+    prevIndex = null
+    lastChangePos = null
   }
 
   function getVisualIndex(itemId: string): number {
