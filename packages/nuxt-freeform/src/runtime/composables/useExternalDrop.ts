@@ -8,6 +8,7 @@ interface ExternalDropOptions {
   handleExternalDrop: (position: { x: number, y: number } | null, items: FreeformItemData[]) => {
     dropIndex: number | null
     containerId: string | null
+    containerAccepted: boolean
   }
 }
 
@@ -41,7 +42,7 @@ export function useExternalDrop(options: ExternalDropOptions) {
 
     // Update registry so source Freeform can read the target info
     registry.setTargetDropIndex(result.dropIndex)
-    registry.setTargetContainer(result.containerId)
+    registry.setTargetContainer(result.containerId, result.containerAccepted)
   }, { immediate: true })
 
   return {

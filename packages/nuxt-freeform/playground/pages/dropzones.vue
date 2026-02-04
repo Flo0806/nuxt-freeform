@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import type { FreeformItemData } from 'nuxt-freeform'
+import type { FreeformItemData } from '../../src/runtime/types'
+
+
 
 interface ListItem extends FreeformItemData {
   name: string
@@ -9,7 +11,7 @@ interface ListItem extends FreeformItemData {
 
 const listA = ref<ListItem[]>([
   { id: 'a1', name: 'Apple', color: 'bg-red-500' },
-  { id: 'a2', name: 'Banana', color: 'bg-yellow-500' },
+  { id: 'a2', name: 'Banana', color: 'bg-yellow-500', disabled: true },
   { id: 'a3', name: 'Cherry', color: 'bg-pink-500' },
   { id: 'a4', name: 'Date', color: 'bg-amber-700' },
 ])
@@ -22,6 +24,7 @@ const listB = ref<ListItem[]>([
 
 const listC = ref<ListItem[]>([
   { id: 'c1', name: 'Grape', color: 'bg-violet-500' },
+  { id: 'c-folder', name: 'A-Only Folder', color: 'bg-emerald-600', type: 'container' },
 ])
 
 const eventLog = ref<string[]>([])
@@ -82,9 +85,14 @@ function onDropIntoContainer(items: FreeformItemData[], container: FreeformItemD
   log(`Dropped into container "${(container as ListItem).name}": ${typed.map(i => i.name).join(', ')}`)
 }
 
-// List C is blocked - accepts nothing
+// List C is blocked - accepts nothing directly
 function acceptNothing() {
   return false
+}
+
+// Container in List C only accepts items from List A (id starts with 'a')
+function acceptOnlyFromListA(items: FreeformItemData[]) {
+  return items.every(item => item.id.startsWith('a'))
 }
 </script>
 
@@ -102,7 +110,8 @@ function acceptNothing() {
         <li>Drag items between List A and List B</li>
         <li>Drop at a specific position - the placeholder shows where</li>
         <li>List B has a folder - drag items onto it</li>
-        <li>Try List C - it's blocked and rejects all drops (red feedback)</li>
+        <li>List C is blocked BUT has a folder that only accepts items from List A</li>
+        <li>Try dragging Apple → C's folder (✓) vs Eggplant → C's folder (✗)</li>
         <li>Watch the event log to see what's happening</li>
       </ul>
     </div>
@@ -135,13 +144,18 @@ function acceptNothing() {
                 v-for="item in listA"
                 :key="item.id"
                 :item="item"
+                :disabled="item.disabled"
               >
                 <template #default="{ selected }">
                   <div
-                    class="px-4 py-2 rounded-lg text-white font-medium cursor-grab"
-                    :class="[item.color, { 'ring-2 ring-white': selected }]"
+                    class="px-4 py-2 rounded-lg text-white font-medium"
+                    :class="[
+                      item.color,
+                      { 'ring-2 ring-white': selected },
+                      item.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-grab',
+                    ]"
                   >
-                    {{ item.name }}
+                    {{ item.name }}{{ item.disabled ? ' 🔒' : '' }}
                   </div>
                 </template>
               </FreeformItem>
@@ -251,18 +265,25 @@ function acceptNothing() {
               drop-zone-id="list-c"
               class="flex flex-wrap gap-2"
               @drop-to-zone="onDropToZone"
+              @drop-into="onDropIntoContainer"
             >
               <FreeformItem
                 v-for="item in listC"
                 :key="item.id"
                 :item="item"
+                :accept="item.type === 'container' ? acceptOnlyFromListA : undefined"
               >
-                <template #default="{ selected }">
+                <template #default="{ selected, dropTarget, dropAccepted }">
                   <div
                     class="px-4 py-2 rounded-lg text-white font-medium cursor-grab"
-                    :class="[item.color, { 'ring-2 ring-white': selected }]"
+                    :class="[
+                      item.color,
+                      { 'ring-2 ring-white': selected },
+                      { 'ring-2 ring-green-400 scale-105': dropTarget && dropAccepted },
+                      { 'ring-2 ring-red-400': dropTarget && !dropAccepted },
+                    ]"
                   >
-                    {{ item.name }}
+                    {{ item.type === 'container' ? '📁 ' : '' }}{{ item.name }}
                   </div>
                 </template>
               </FreeformItem>

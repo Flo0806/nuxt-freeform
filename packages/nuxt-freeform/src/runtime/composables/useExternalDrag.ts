@@ -35,6 +35,10 @@ export function useExternalDrag(ownDropZoneId?: string) {
 
   /**
    * Call on pointerup. Returns drop info and cleans up.
+   *
+   * Accept logic:
+   * - If dropping into a container: check container.accept (via registry)
+   * - If dropping directly into zone: check zone.accept
    */
   function finishExternalDrag(draggedItems: FreeformItemData[]) {
     const zone = currentExternalZone.value
@@ -42,16 +46,29 @@ export function useExternalDrag(ownDropZoneId?: string) {
       return null
     }
 
-    const accepted = zone.accept ? zone.accept(draggedItems) : true
-    if (!accepted) {
-      cleanup()
-      return null
+    const containerId = registry.targetContainerId.value
+    const containerAccepted = registry.targetContainerAccepted.value
+
+    if (containerId) {
+      // Dropping into container - check container accept
+      if (!containerAccepted) {
+        cleanup()
+        return null
+      }
+    }
+    else {
+      // Direct drop into zone - check zone accept
+      const accepted = zone.accept ? zone.accept(draggedItems) : true
+      if (!accepted) {
+        cleanup()
+        return null
+      }
     }
 
     const result = {
       zoneId: zone.id,
       dropIndex: registry.targetDropIndex.value ?? 0,
-      containerId: registry.targetContainerId.value,
+      containerId,
     }
 
     cleanup()

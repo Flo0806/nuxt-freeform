@@ -462,7 +462,7 @@ export function createFreeformContext() {
         dragSourceIndex.value = null
         currentDropTarget.value = null
       }
-      return { dropIndex: null, containerId: null }
+      return { dropIndex: null, containerId: null, containerAccepted: true }
     }
 
     // Mark as external drop
@@ -470,6 +470,7 @@ export function createFreeformContext() {
 
     // Check for container drop first
     let foundContainer: FreeformItemData | null = null
+    let containerAccepted = true
     for (const [, entry] of dropZones) {
       if (!entry.item) continue
       const rect = entry.element.getBoundingClientRect()
@@ -477,14 +478,13 @@ export function createFreeformContext() {
       if (position.x >= (rect.left + 20) && position.x <= (rect.right - 20)
         && position.y >= rect.top && position.y <= rect.bottom) {
         const accepted = entry.accept ? entry.accept(incomingItems) : true
-        if (accepted) {
-          foundContainer = entry.item
-          currentDropTarget.value = {
-            item: entry.item,
-            bounds: { x: rect.left, y: rect.top, width: rect.width, height: rect.height },
-            type: 'container',
-            accepted: true,
-          }
+        foundContainer = entry.item
+        containerAccepted = accepted
+        currentDropTarget.value = {
+          item: entry.item,
+          bounds: { x: rect.left, y: rect.top, width: rect.width, height: rect.height },
+          type: 'container',
+          accepted,
         }
         break
       }
@@ -499,6 +499,7 @@ export function createFreeformContext() {
       return {
         dropIndex: dropIndex.value,
         containerId: foundContainer?.id ?? null,
+        containerAccepted,
       }
     }
 
@@ -511,6 +512,7 @@ export function createFreeformContext() {
     return {
       dropIndex: dropIndex.value,
       containerId: foundContainer?.id ?? null,
+      containerAccepted,
     }
   }
 

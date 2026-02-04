@@ -16,8 +16,13 @@ const zoneId = props.id || `dropzone-${Math.random().toString(36).slice(2, 9)}`
 const isOver = computed(() => registry.hoveredZoneId.value === zoneId)
 
 // Reactive: are the items accepted?
+// If hovering over a container inside this zone, zone.accept is irrelevant
+// (the container decides acceptance)
 const isAccepted = computed(() => {
   if (!isOver.value) return false
+  // If over a container, the container decides - zone shows as accepted
+  if (registry.targetContainerId.value) return true
+  // Direct drop into zone - check zone.accept
   if (!props.accept) return true
   return props.accept(registry.hoveredItems.value)
 })

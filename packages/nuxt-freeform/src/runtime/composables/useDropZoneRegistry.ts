@@ -16,6 +16,7 @@ const hoveredItems = ref<FreeformItemData[]>([])
 const dragPosition = ref<{ x: number, y: number } | null>(null)
 const targetDropIndex = ref<number | null>(null)
 const targetContainerId = ref<string | null>(null)
+const targetContainerAccepted = ref<boolean>(true)
 
 export function useDropZoneRegistry() {
   function register(id: string, element: HTMLElement, accept?: (items: FreeformItemData[]) => boolean) {
@@ -63,8 +64,9 @@ export function useDropZoneRegistry() {
     targetDropIndex.value = index
   }
 
-  function setTargetContainer(containerId: string | null) {
+  function setTargetContainer(containerId: string | null, accepted: boolean = true) {
     targetContainerId.value = containerId
+    targetContainerAccepted.value = accepted
   }
 
   return {
@@ -81,5 +83,6 @@ export function useDropZoneRegistry() {
     dragPosition,
     targetDropIndex,
     targetContainerId,
+    targetContainerAccepted,
   }
 }
