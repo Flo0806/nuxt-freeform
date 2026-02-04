@@ -188,6 +188,69 @@ Wraps `TheFreeform` to enable lasso selection.
 </FreeformSelection>
 ```
 
+### FreeformDropZone
+
+Enables cross-list drag & drop between multiple `TheFreeform` instances.
+
+```vue
+<FreeformDropZone id="list-a" :accept="acceptFn">
+  <template #default="{ isOver, isAccepted }">
+    <div :class="{ 'bg-green-100': isOver && isAccepted, 'bg-red-100': isOver && !isAccepted }">
+      <TheFreeform v-model="listA" drop-zone-id="list-a" @drop-to-zone="onDropToZone">
+        <!-- items -->
+      </TheFreeform>
+    </div>
+  </template>
+</FreeformDropZone>
+```
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `id` | `string` | auto-generated | Unique zone identifier |
+| `accept` | `(items) => boolean` | - | Validate if drop is allowed |
+
+**Slot Props:**
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `isOver` | `boolean` | Items are being dragged over this zone |
+| `isAccepted` | `boolean` | Drop would be accepted |
+
+#### Hierarchical Accept
+
+When using `FreeformDropZone` with containers inside, the accept logic is hierarchical:
+
+- **Zone `accept`**: Only checked for direct drops into the zone
+- **Container `accept`**: Checked when dropping into a container inside the zone
+
+This allows patterns like "zone accepts only cards, but cards (containers) accept controls":
+
+```vue
+<FreeformDropZone id="dashboard" :accept="acceptOnlyCards">
+  <TheFreeform v-model="cards" drop-zone-id="dashboard">
+    <FreeformItem
+      v-for="card in cards"
+      :item="card"
+      :accept="acceptOnlyControls"
+    />
+  </TheFreeform>
+</FreeformDropZone>
+```
+
+```ts
+// Zone accepts only cards directly
+function acceptOnlyCards(items) {
+  return items.every(i => i.type === 'card')
+}
+
+// Containers (cards) accept only controls
+function acceptOnlyControls(items) {
+  return items.every(i => i.type === 'control')
+}
+```
+
+Items dragged to a container bypass the zone's `accept` - only the container's `accept` is checked.
+
 ## Examples
 
 ### File Manager
@@ -360,6 +423,7 @@ Customize the default styling with CSS variables:
 | `drag-move` | `items[], position` | Dragging (with cursor position) |
 | `drag-end` | `items[]` | Drag operation ended |
 | `drop-into` | `items[], container, accepted` | Items dropped into a container |
+| `drop-to-zone` | `items[], zoneId, index, containerId` | Items dropped to external zone |
 | `reorder` | `fromIndex, toIndex` | Items reordered |
 
 ## TypeScript

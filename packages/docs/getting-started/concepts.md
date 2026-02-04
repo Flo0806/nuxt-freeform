@@ -137,3 +137,50 @@ function acceptFiles(draggedItems: FreeformItemData[]) {
 ```
 
 When `accept` returns `false`, the drop is rejected and visual feedback shows red instead of green.
+
+## Drop Zones
+
+For cross-list drag & drop, wrap your `TheFreeform` instances with `FreeformDropZone`:
+
+```vue
+<FreeformDropZone id="list-a">
+  <TheFreeform v-model="listA" drop-zone-id="list-a" @drop-to-zone="onDropToZone">
+    <!-- items -->
+  </TheFreeform>
+</FreeformDropZone>
+```
+
+The `@drop-to-zone` event fires when items are dropped from another zone.
+
+### Hierarchical Accept
+
+When using drop zones with containers, the accept logic works hierarchically:
+
+- **Zone `accept`**: Only checked for direct drops into the zone
+- **Container `accept`**: Checked when dropping into a container inside the zone
+
+This enables complex patterns like a dashboard that accepts only cards, but cards (containers) can accept controls:
+
+```vue
+<FreeformDropZone id="dashboard" :accept="acceptOnlyCards">
+  <TheFreeform v-model="cards" drop-zone-id="dashboard">
+    <FreeformItem
+      v-for="card in cards"
+      :item="card"
+      :accept="acceptOnlyControls"
+    />
+  </TheFreeform>
+</FreeformDropZone>
+```
+
+```ts
+function acceptOnlyCards(items) {
+  return items.every(i => i.type === 'card')
+}
+
+function acceptOnlyControls(items) {
+  return items.every(i => i.type === 'control')
+}
+```
+
+**Key insight**: Items dragged to a container bypass the zone's `accept` - only the container's `accept` is checked.

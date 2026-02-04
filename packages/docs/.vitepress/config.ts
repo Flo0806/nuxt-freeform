@@ -29,6 +29,7 @@ export default defineConfig({
           { text: 'FreeformItem', link: '/components/freeform-item' },
           { text: 'FreeformPlaceholder', link: '/components/freeform-placeholder' },
           { text: 'FreeformSelection', link: '/components/freeform-selection' },
+          { text: 'FreeformDropZone', link: '/components/freeform-drop-zone' },
         ],
       },
       {
