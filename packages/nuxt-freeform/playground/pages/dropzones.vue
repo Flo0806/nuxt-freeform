@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import type { FreeformItemData } from '../../src/runtime/types'
 
-
-
 interface ListItem extends FreeformItemData {
   name: string
   color: string
