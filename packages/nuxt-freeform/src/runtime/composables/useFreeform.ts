@@ -515,6 +515,17 @@ export function createFreeformContext() {
       currentDropTarget.value = null
     }
 
+    // For empty containers, always allow drop at index 0
+    // (container might have no height, so bounds check would fail)
+    if (items.value.length === 0) {
+      dropIndex.value = 0
+      return {
+        dropIndex: 0,
+        containerId: foundContainer?.id ?? null,
+        containerAccepted,
+      }
+    }
+
     // Only update drop index if cursor is inside the Freeform container
     if (!isInsideContainer(position)) {
       return {

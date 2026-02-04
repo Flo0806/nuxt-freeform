@@ -27,6 +27,10 @@ const isAccepted = computed(() => {
   return props.accept(registry.hoveredItems.value)
 })
 
+// Reactive: items being dragged over this zone
+const items = computed(() => isOver.value ? registry.hoveredItems.value : [])
+const count = computed(() => items.value.length)
+
 onMounted(() => {
   if (elementRef.value) {
     registry.register(zoneId, elementRef.value, props.accept)
@@ -41,6 +45,8 @@ defineExpose({
   zoneId,
   isOver,
   isAccepted,
+  items,
+  count,
 })
 </script>
 
@@ -58,6 +64,8 @@ defineExpose({
     <slot
       :is-over="isOver"
       :is-accepted="isAccepted"
+      :items="items"
+      :count="count"
     />
   </div>
 </template>
