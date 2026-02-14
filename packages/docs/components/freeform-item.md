@@ -83,6 +83,24 @@ When the accept function returns `false`:
 - Visual feedback shows red instead of green
 - The `@drop-into` event still fires with `accepted: false`
 
+## Drag Handle
+
+By default, the entire item is draggable. To restrict dragging to a specific element, add `data-freeform-handle` to it:
+
+```vue
+<FreeformItem :item="item">
+  <template #default="{ dragging }">
+    <div class="flex items-center gap-2">
+      <span data-freeform-handle class="cursor-grab">⠿</span>
+      <span>{{ item.id }}</span>
+    </div>
+  </template>
+</FreeformItem>
+```
+
+- **No handle** — the whole item is draggable (default behavior)
+- **Handle present** — only dragging from the handle element starts a drag; clicks elsewhere are ignored by the drag system
+
 ## Default Styling
 
 Without a custom slot, items get default styling:

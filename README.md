@@ -158,6 +158,21 @@ Individual draggable item. Automatically registers with the parent `TheFreeform`
 | `dropTarget` | `boolean` | Item is a drop target (hovering) |
 | `dropAccepted` | `boolean` | Drop would be accepted |
 
+#### Drag Handle
+
+By default, the entire item is draggable. Add `data-freeform-handle` to restrict dragging to a specific element:
+
+```vue
+<FreeformItem :item="item">
+  <template #default="{ dragging }">
+    <div class="flex items-center gap-2">
+      <span data-freeform-handle class="cursor-grab">⠿</span>
+      <span>{{ item.id }}</span>
+    </div>
+  </template>
+</FreeformItem>
+```
+
 ### FreeformPlaceholder
 
 Shows where dragged items will land. Automatically sizes to match the dragged item.
