@@ -365,6 +365,12 @@ export function createFreeformContext() {
 
       // Cursor is within this row
       if (position.y >= rowTop && position.y < rowBottom) {
+        // Single-item row: use vertical midpoint instead of horizontal gaps
+        if (row.length === 1) {
+          const item = row[0]!
+          const midY = item.rect.top + item.rect.height / 2
+          return position.y < midY ? item.index : item.index + 1
+        }
         return findDropIndexInRow(row, position.x)
       }
     }
