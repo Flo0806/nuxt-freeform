@@ -63,11 +63,23 @@ const isDropAccepted = computed(() =>
   isDropTarget.value && context.currentDropTarget.value?.accepted,
 )
 
+function hasHandle(): boolean {
+  return !!elementRef.value?.querySelector('[data-freeform-handle]')
+}
+
+function isFromHandle(event: PointerEvent): boolean {
+  const target = event.target as HTMLElement | null
+  return !!target?.closest('[data-freeform-handle]')
+}
+
 function onPointerDown(event: PointerEvent) {
   if (props.disabled) return
 
   // Stop propagation so container doesn't start lasso
   event.stopPropagation()
+
+  // If a handle exists, only drag from it
+  if (hasHandle() && !isFromHandle(event)) return
 
   // Handle selection on pointer down
   // Ctrl/Cmd+click toggles selection

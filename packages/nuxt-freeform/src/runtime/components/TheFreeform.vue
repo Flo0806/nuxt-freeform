@@ -276,6 +276,7 @@ onUnmounted(() => {
 <style>
 .freeform-container {
   position: relative;
+  display: flex;
 
   /* Color tokens - override these to customize */
   --freeform-color-primary: #3b82f6;
