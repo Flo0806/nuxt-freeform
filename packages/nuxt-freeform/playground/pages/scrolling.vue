@@ -2,8 +2,10 @@
 import type { FreeformItemData } from 'nuxt-freeform'
 
 interface FileItem extends FreeformItemData {
+  id: string
   name: string
   icon: string
+  type?: string
 }
 
 // Auto-scroll when dragging near edges
@@ -11,6 +13,30 @@ const scrollContainer = ref<HTMLElement | null>(null)
 const { onDragMove, stop: stopAutoScroll } = useAutoScroll(scrollContainer)
 
 // Generate many items for scrolling
+// Vertical list items
+const listItems = ref<FileItem[]>(
+  Array.from({ length: 20 }, (_, i) => ({
+    id: `list-${i + 1}`,
+    name: `Item ${i + 1} — some description text`,
+    icon: ['📄', '📊', '📝', '🖼️', '🎬', '🎵'][i % 6]!,
+  })) as FileItem[],
+)
+
+const scrollListContainer = ref<HTMLElement | null>(null)
+const { onDragMove: onListDragMove, stop: stopListAutoScroll } = useAutoScroll(scrollListContainer)
+
+// Grid + vertical scroll items
+const gridItems = ref<FileItem[]>(
+  Array.from({ length: 30 }, (_, i) => ({
+    id: `grid-${i + 1}`,
+    name: `File ${i + 1}`,
+    icon: ['📄', '📊', '📝', '🖼️', '🎬', '🎵', '📦', '⚙️', '🎨', '🔷'][i % 10]!,
+  } as FileItem)),
+)
+
+const scrollGridContainer = ref<HTMLElement | null>(null)
+const { onDragMove: onGridDragMove, stop: stopGridAutoScroll } = useAutoScroll(scrollGridContainer)
+
 const items = ref<FileItem[]>([
   // Folders at top
   { id: 'folder-1', name: 'Documents', icon: '📁', type: 'container' },
@@ -129,6 +155,88 @@ function onDropInto(draggedItems: FreeformItemData[], container: FreeformItemDat
             >+{{ count - 1 }} more</span>
           </div>
         </template>
+      </TheFreeform>
+    </div>
+    <!-- Vertical list -->
+    <h2 class="text-xl font-bold text-white mt-10 mb-2">
+      Vertical List
+    </h2>
+
+    <div
+      ref="scrollListContainer"
+      class="bg-slate-800 rounded-xl border border-white/10 h-[400px] overflow-y-auto overflow-x-hidden"
+    >
+      <TheFreeform
+        v-model="listItems"
+        class="flex flex-col"
+        @drag-move="(_, pos) => onListDragMove(pos)"
+        @drag-end="stopListAutoScroll"
+      >
+        <FreeformItem
+          v-for="item in listItems"
+          :key="item.id"
+          :item="item"
+        >
+          <template #default="{ selected, dragging }">
+            <div
+              class="flex items-center gap-3 px-4 py-4 border-b border-white/5 cursor-grab transition-all"
+              :class="[
+                selected ? 'bg-blue-500/20' : 'hover:bg-slate-700',
+                dragging ? 'opacity-50' : '',
+              ]"
+            >
+              <span class="text-lg">{{ item.icon }}</span>
+              <span class="text-white text-sm truncate">{{ item.name }}</span>
+              <span class="ml-auto text-white/30 text-xs">{{ item.id }}</span>
+            </div>
+          </template>
+        </FreeformItem>
+
+        <FreeformPlaceholder>
+          <div class="mx-4 my-1 rounded border-2 border-dashed border-white/20 h-14" />
+        </FreeformPlaceholder>
+      </TheFreeform>
+    </div>
+
+    <!-- Grid + vertical scroll -->
+    <h2 class="text-xl font-bold text-white mt-10 mb-2">
+      Grid + Vertical Scroll
+    </h2>
+
+    <div
+      ref="scrollGridContainer"
+      class="bg-slate-800 rounded-xl border border-white/10 h-[400px] overflow-y-auto overflow-x-hidden"
+    >
+      <TheFreeform
+        v-model="gridItems"
+        class="!grid grid-cols-4 gap-3 p-4"
+        @drag-move="(_, pos) => onGridDragMove(pos)"
+        @drag-end="stopGridAutoScroll"
+      >
+        <FreeformItem
+          v-for="item in gridItems"
+          :key="item.id"
+          :item="item"
+        >
+          <template #default="{ selected, dragging }">
+            <div
+              class="flex flex-col items-center justify-center p-3 rounded-lg cursor-grab transition-all"
+              :class="[
+                selected ? 'bg-blue-500/30 ring-2 ring-blue-400' : 'bg-slate-700 hover:bg-slate-600',
+                dragging ? 'opacity-50' : '',
+              ]"
+            >
+              <span class="text-2xl mb-1">{{ item.icon }}</span>
+              <span class="text-white text-xs text-center truncate w-full">{{ item.name }}</span>
+            </div>
+          </template>
+        </FreeformItem>
+
+        <FreeformPlaceholder>
+          <div class="flex items-center justify-center p-3 rounded-lg border-2 border-dashed border-white/20 h-full min-h-[72px]">
+            <span class="text-white/30 text-sm">⬇</span>
+          </div>
+        </FreeformPlaceholder>
       </TheFreeform>
     </div>
   </div>
