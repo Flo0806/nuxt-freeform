@@ -43,7 +43,25 @@ const {
   handlePointerMove,
   handlePointerUp,
   handleExternalDrop,
+  updateDropTarget,
 } = createFreeformContext()
+
+// When any ancestor scrolls during a drag, items shift under the cursor
+// but no pointermove fires. Recalculate drop position on scroll events.
+function onScrollDuringDrag() {
+  if (dragState.value.thresholdPassed && dragState.value.currentPosition) {
+    updateDropTarget(dragState.value.currentPosition, true)
+  }
+}
+
+watch(() => dragState.value.thresholdPassed, (dragging) => {
+  if (dragging) {
+    document.addEventListener('scroll', onScrollDuringDrag, true)
+  }
+  else {
+    document.removeEventListener('scroll', onScrollDuringDrag, true)
+  }
+})
 
 // === CROSS-LIST DRAG & DROP ===
 const { detectExternalZone, finishExternalDrag } = useExternalDrag(props.dropZoneId)
@@ -218,6 +236,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  document.removeEventListener('scroll', onScrollDuringDrag, true)
   document.removeEventListener('pointermove', onPointerMove)
   document.removeEventListener('pointerup', onPointerUp)
   document.removeEventListener('pointercancel', onPointerUp)

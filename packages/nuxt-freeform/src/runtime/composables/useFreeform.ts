@@ -157,6 +157,37 @@ function findDropIndexInRow(row: VisibleItem[], positionX: number): number | nul
   return null // Cursor in middle of item (hysteresis)
 }
 
+function findDropIndexInColumn(rows: VisibleItem[][], positionY: number): number | null {
+  for (let i = 0; i <= rows.length; i++) {
+    const prevRow = rows[i - 1]
+    const nextRow = rows[i]
+    const prevItem = prevRow?.[0]
+    const nextItem = nextRow?.[0]
+
+    let gapTop: number
+    let gapBottom: number
+
+    if (!prevItem) {
+      gapTop = -Infinity
+      gapBottom = nextItem!.rect.top + getEdgeThreshold(nextItem!.rect.height)
+    }
+    else if (!nextItem) {
+      gapTop = prevItem.rect.bottom - getEdgeThreshold(prevItem.rect.height)
+      gapBottom = Infinity
+    }
+    else {
+      gapTop = prevItem.rect.bottom - getEdgeThreshold(prevItem.rect.height)
+      gapBottom = nextItem.rect.top + getEdgeThreshold(nextItem.rect.height)
+    }
+
+    if (positionY >= gapTop && positionY < gapBottom) {
+      return nextItem ? nextItem.index : prevItem!.index + 1
+    }
+  }
+
+  return null
+}
+
 export function createFreeformContext() {
   const itemElements = new Map<string, HTMLElement>()
   const dropZones = new Map<string, DropZoneEntry>()
@@ -348,6 +379,14 @@ export function createFreeformContext() {
 
     const rows = sortAndGroupByRow(visibleItems)
 
+    // Detect vertical list: every row has exactly 1 item
+    // Items stacked vertically = all share the same X position
+    const allSingleRows = rows.length > 1 && rows.every(r => r.length === 1)
+
+    if (allSingleRows) {
+      return findDropIndexInColumn(rows, position.y)
+    }
+
     // Find which row the cursor is on
     for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
       const row = rows[rowIndex]!
@@ -365,11 +404,9 @@ export function createFreeformContext() {
 
       // Cursor is within this row
       if (position.y >= rowTop && position.y < rowBottom) {
-        // Single-item row: use vertical midpoint instead of horizontal gaps
+        // Single-item row in a grid: use horizontal position
         if (row.length === 1) {
-          const item = row[0]!
-          const midY = item.rect.top + item.rect.height / 2
-          return position.y < midY ? item.index : item.index + 1
+          return findDropIndexInRow(row, position.x)
         }
         return findDropIndexInRow(row, position.x)
       }
@@ -386,12 +423,17 @@ export function createFreeformContext() {
 
   function isInsideContainer(position: Position): boolean {
     if (!containerElement.value) return true // No container = always inside (fallback)
-    const rect = containerElement.value.getBoundingClientRect()
-    return position.x >= rect.left && position.x <= rect.right
-      && position.y >= rect.top && position.y <= rect.bottom
+    const el = containerElement.value
+    const rect = el.getBoundingClientRect()
+    // Use scrollWidth/scrollHeight to include overflow content (e.g. flex items
+    // extending beyond the container when a parent element provides the scrollbar)
+    const contentRight = rect.left + Math.max(el.scrollWidth, rect.width)
+    const contentBottom = rect.top + Math.max(el.scrollHeight, rect.height)
+    return position.x >= rect.left && position.x <= contentRight
+      && position.y >= rect.top && position.y <= contentBottom
   }
 
-  function updateDropTarget(position: Position) {
+  function updateDropTarget(position: Position, skipOscillationCheck = false) {
     // Container drop detection is handled via mouseenter/mouseleave in FreeformItem
     // If currently over a container, skip reorder logic
     if (currentDropTarget.value) return
@@ -404,7 +446,8 @@ export function createFreeformContext() {
 
     if (newIndex !== null && newIndex !== dropIndex.value) {
       // Detect oscillation: trying to go back where we just came from?
-      if (prevIndex === newIndex && lastChangePos) {
+      // Skip this check when called from scroll (cursor didn't move but items did)
+      if (!skipOscillationCheck && prevIndex === newIndex && lastChangePos) {
         const dx = Math.abs(position.x - lastChangePos.x)
         const dy = Math.abs(position.y - lastChangePos.y)
         // Only block if cursor barely moved (real oscillation from DOM shift)
@@ -593,6 +636,7 @@ export function createFreeformContext() {
     handlePointerUp,
     handleExternalDrop,
     getVisualIndex,
+    updateDropTarget,
   }
 }
 
