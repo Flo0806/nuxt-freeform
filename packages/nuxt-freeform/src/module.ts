@@ -1,4 +1,4 @@
-import { defineNuxtModule, addComponent, addImports, createResolver } from '@nuxt/kit'
+import { defineNuxtModule, addComponent, addImports, addImportsDir, createResolver } from '@nuxt/kit'
 // Required so the emitted d.ts can name the module type (TS2742 under pnpm)
 import type { NuxtModule } from '@nuxt/schema'
 
@@ -12,7 +12,10 @@ export type {
   Rect,
   DropTarget,
   DropTargetType,
+  GridCell,
 } from './runtime/types'
+
+export type { GridPlacement, ResolveGridDropOptions } from './runtime/utils/grid'
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ModuleOptions {}
@@ -61,6 +64,9 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       name: 'useAutoScroll',
       from: resolver.resolve('./runtime/composables/useAutoScroll'),
     })
+
+    // Optional helpers (grid placement maths) - use them or ignore them
+    addImportsDir(resolver.resolve('./runtime/utils'))
   },
 })
 

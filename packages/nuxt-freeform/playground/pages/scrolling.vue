@@ -5,7 +5,7 @@ interface FileItem extends FreeformItemData {
   id: string
   name: string
   icon: string
-  type?: string
+  type?: 'item' | 'container'
 }
 
 // Auto-scroll when dragging near edges
