@@ -1,4 +1,6 @@
 import { defineNuxtModule, addComponent, addImports, createResolver } from '@nuxt/kit'
+// Required so the emitted d.ts can name the module type (TS2742 under pnpm)
+import type { NuxtModule } from '@nuxt/schema'
 
 // Re-export types for consumers
 export type {
@@ -15,7 +17,7 @@ export type {
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ModuleOptions {}
 
-export default defineNuxtModule<ModuleOptions>({
+const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
   meta: {
     name: 'nuxt-freeform',
     configKey: 'nuxtFreeform',
@@ -61,3 +63,5 @@ export default defineNuxtModule<ModuleOptions>({
     })
   },
 })
+
+export default module
