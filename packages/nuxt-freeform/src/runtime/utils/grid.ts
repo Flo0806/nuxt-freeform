@@ -17,6 +17,12 @@ export interface ResolveGridDropOptions {
   target: GridCell
   /** Cells taken by items that are NOT being dragged */
   occupied: Iterable<GridCell>
+  /**
+   * Cells that must never receive a placement, e.g. folders that swallow a
+   * drop instead of taking a position. Dropping on one yields no placement
+   * at all, so the caller can leave the items untouched.
+   */
+  blocked?: Iterable<GridCell>
   columns: number
   rows: number
 }
@@ -45,34 +51,47 @@ function findFreeCell(from: GridCell, taken: Set<string>, columns: number, rows:
 /**
  * Work out where a group of dragged items should land on a grid.
  *
- * Mirrors how desktop file managers behave: the grabbed item goes to the
+ * Mirrors how desktop file managers behave: the grabbed item aims for the
  * target cell, every other selected item keeps its offset relative to it,
- * the group is clamped into the raster, and items whose cell is taken move
- * to the next free one instead of the drop being rejected.
+ * and items whose cell is taken move to the next free one instead of the
+ * drop being rejected.
  *
- * Items that find no free cell at all (full grid) are left where they were.
+ * Note the group is clamped into the raster as a block, so near an edge even
+ * the grabbed item can end up beside the cell it was dropped on - report the
+ * returned cells, not the target, if you tell the user where things landed.
+ *
+ * Items that find no free cell at all (full grid) keep their old cell, but
+ * only if that cell is still inside the raster - otherwise they are left out
+ * of the result entirely, so callers can tell placement failed.
  *
  * @returns Map of item id to its new cell
  */
-export function resolveGridDrop(options: ResolveGridDropOptions): Map<string, GridCell> {
-  const { dragged, anchorId, target, occupied, columns, rows } = options
+/**
+ * The cells the group would take if nothing were in the way: the target cell
+ * for the anchor, every other item at its offset from it, and the whole block
+ * clamped into the raster.
+ *
+ * Compare this against {@link resolveGridDrop} to tell which items had to
+ * dodge an occupied cell - clamping alone is not dodging.
+ *
+ * @returns Map of item id to its wished-for cell
+ */
+export function resolveGridWishes(options: ResolveGridDropOptions): Map<string, GridCell> {
+  const { dragged, anchorId, target, columns, rows } = options
   const result = new Map<string, GridCell>()
 
   if (dragged.length === 0 || columns <= 0 || rows <= 0) return result
 
   const anchor = dragged.find(d => d.id === anchorId) ?? dragged[0]!
 
-  // Wish position for each item: target cell plus its offset from the anchor
   const wishes = dragged.map(item => ({
     id: item.id,
-    origin: item.cell,
     cell: {
       x: target.x + (item.cell.x - anchor.cell.x),
       y: target.y + (item.cell.y - anchor.cell.y),
     },
   }))
 
-  // Clamp the group as a block, so the arrangement survives at the edges
   const minX = Math.min(...wishes.map(w => w.cell.x))
   const maxX = Math.max(...wishes.map(w => w.cell.x))
   const minY = Math.min(...wishes.map(w => w.cell.y))
@@ -82,12 +101,34 @@ export function resolveGridDrop(options: ResolveGridDropOptions): Map<string, Gr
   const shiftY = minY < 0 ? -minY : Math.min(0, rows - 1 - maxY)
 
   for (const wish of wishes) {
-    wish.cell = { x: wish.cell.x + shiftX, y: wish.cell.y + shiftY }
+    result.set(wish.id, { x: wish.cell.x + shiftX, y: wish.cell.y + shiftY })
   }
+
+  return result
+}
+
+export function resolveGridDrop(options: ResolveGridDropOptions): Map<string, GridCell> {
+  const { dragged, target, occupied, blocked, columns, rows } = options
+  const result = new Map<string, GridCell>()
+
+  if (dragged.length === 0 || columns <= 0 || rows <= 0) return result
+
+  // The target itself is off limits - the drop means something else there
+  const blockedKeys = new Set<string>()
+  for (const cell of blocked ?? []) blockedKeys.add(key(cell))
+  if (blockedKeys.has(key(target))) return result
+
+  const wished = resolveGridWishes(options)
+  const wishes = dragged.map(item => ({
+    id: item.id,
+    origin: item.cell,
+    cell: wished.get(item.id)!,
+  }))
 
   // Cells held by items that stay put - the dragged ones release theirs first
   const taken = new Set<string>()
   for (const cell of occupied) taken.add(key(cell))
+  for (const cellKey of blockedKeys) taken.add(cellKey)
 
   // Items whose wish is free and inside the grid win it; the rest look for a
   // free cell afterwards, so they cannot displace an item that already fits.
@@ -117,10 +158,14 @@ export function resolveGridDrop(options: ResolveGridDropOptions): Map<string, Gr
       taken.add(key(free))
       result.set(wish.id, free)
     }
-    else {
+    else if (
+      wish.origin.x >= 0 && wish.origin.x < columns
+      && wish.origin.y >= 0 && wish.origin.y < rows
+    ) {
       // Grid is full - leave the item where it was
       result.set(wish.id, wish.origin)
     }
+    // Origin is outside the raster too: no valid cell exists, report nothing
   }
 
   return result

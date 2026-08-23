@@ -17,6 +17,9 @@ export type {
 
 export type { GridPlacement, ResolveGridDropOptions } from './runtime/utils/grid'
 
+// Also exported as values, so they work without auto-imports too
+export { resolveGridDrop, resolveGridWishes } from './runtime/utils/grid'
+
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ModuleOptions {}
 

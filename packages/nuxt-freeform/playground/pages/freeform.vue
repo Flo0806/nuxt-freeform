@@ -49,34 +49,33 @@ function cellsOf(list: GridItem[]): GridCell[] {
   return list.map(i => ({ x: i.gridX, y: i.gridY }))
 }
 
-/** Where a group would land if dropped on `target` */
-function placementFor(target: GridCell, group: GridItem[]) {
+function optionsFor(target: GridCell, group: GridItem[]) {
   const groupIds = new Set(group.map(i => i.id))
-  return resolveGridDrop({
+  const others = items.value.filter(i => !groupIds.has(i.id))
+  return {
     dragged: group.map(i => ({ id: i.id, cell: { x: i.gridX, y: i.gridY } })),
     anchorId: anchorId.value ?? group[0]!.id,
     target,
-    occupied: cellsOf(items.value.filter(i => !groupIds.has(i.id))),
+    occupied: cellsOf(others),
+    // Folders swallow the drop (move-into), so they are never a position
+    blocked: cellsOf(others.filter(i => i.type === 'container')),
     columns: columns.value,
     rows: rows.value,
-  })
+  }
 }
 
-/** A folder under the cursor turns the drop into a move-into, not a placement */
-function containerAt(cell: GridCell): GridItem | undefined {
-  const draggedIds = new Set(dragging.value.map(i => i.id))
-  return items.value.find(i =>
-    i.type === 'container'
-    && i.gridX === cell.x
-    && i.gridY === cell.y
-    && !draggedIds.has(i.id),
-  )
+/** Where a group would land if dropped on `target` */
+function placementFor(target: GridCell, group: GridItem[]) {
+  return resolveGridDrop(optionsFor(target, group))
+}
+
+/** Where it would land with nothing in the way - to tell dodging apart */
+function wishesFor(target: GridCell, group: GridItem[]) {
+  return resolveGridWishes(optionsFor(target, group))
 }
 
 const preview = computed(() => {
   if (!hoveredCell.value || dragging.value.length === 0) return new Map<string, GridCell>()
-  // Dropping into a folder - no cells are being reassigned, so show no preview
-  if (containerAt(hoveredCell.value)) return new Map<string, GridCell>()
   return placementFor(hoveredCell.value, dragging.value)
 })
 
@@ -86,17 +85,14 @@ const previewCells = computed(() =>
 
 /** Cells an item had to dodge to - shown in amber instead of blue */
 const dodgedCells = computed(() => {
-  const anchor = dragging.value.find(i => i.id === anchorId.value) ?? dragging.value[0]
-  if (!anchor || !hoveredCell.value) return new Set<string>()
+  if (!hoveredCell.value || preview.value.size === 0) return new Set<string>()
 
+  const wishes = wishesFor(hoveredCell.value, dragging.value)
   const dodged = new Set<string>()
-  for (const item of dragging.value) {
-    const wish = {
-      x: hoveredCell.value.x + (item.gridX - anchor.gridX),
-      y: hoveredCell.value.y + (item.gridY - anchor.gridY),
-    }
-    const actual = preview.value.get(item.id)
-    if (actual && (actual.x !== wish.x || actual.y !== wish.y)) {
+
+  for (const [id, actual] of preview.value) {
+    const wish = wishes.get(id)
+    if (wish && (actual.x !== wish.x || actual.y !== wish.y)) {
       dodged.add(`${actual.x},${actual.y}`)
     }
   }
@@ -148,19 +144,23 @@ function onDrop(payload: DropEventPayload) {
     return
   }
 
-  const anchor = group.find(i => i.id === anchorId.value) ?? group[0]!
   const placement = placementFor(target, group)
+  const wishes = wishesFor(target, group)
+
+  // No placement at all - the cell rejects positioning (e.g. a folder)
+  if (placement.size === 0) {
+    resetDrag()
+    return
+  }
+
   let dodged = 0
 
   for (const [id, cell] of placement) {
     const item = items.value.find(i => i.id === id)
     if (!item) continue
 
-    const wish = {
-      x: target.x + (item.gridX - anchor.gridX),
-      y: target.y + (item.gridY - anchor.gridY),
-    }
-    if (cell.x !== wish.x || cell.y !== wish.y) dodged++
+    const wish = wishes.get(id)
+    if (wish && (cell.x !== wish.x || cell.y !== wish.y)) dodged++
 
     item.gridX = cell.x
     item.gridY = cell.y
@@ -192,8 +192,17 @@ function acceptFiles(dragged: FreeformItemData[]) {
 }
 
 // Shrinking the raster must not strand items outside of it
-watch([columns, rows], () => {
+watch([columns, rows], ([cols, rws], [prevCols, prevRows]) => {
+  // A raster smaller than the item count has nowhere to put them - refuse it
+  if (cols * rws < items.value.length) {
+    columns.value = prevCols
+    rows.value = prevRows
+    log(`${cols}x${rws} is too small for ${items.value.length} items - kept ${prevCols}x${prevRows}`)
+    return
+  }
+
   const strays = items.value.filter(i => i.gridX >= columns.value || i.gridY >= rows.value)
+  let pulled = 0
 
   for (const stray of strays) {
     const placement = resolveGridDrop({
@@ -211,10 +220,11 @@ watch([columns, rows], () => {
     if (cell) {
       stray.gridX = cell.x
       stray.gridY = cell.y
+      pulled++
     }
   }
 
-  if (strays.length) log(`Raster resized · ${strays.length} item(s) pulled back in`)
+  if (pulled) log(`Raster resized · ${pulled} item(s) pulled back in`)
 })
 </script>
 
