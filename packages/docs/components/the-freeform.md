@@ -18,6 +18,7 @@ The main container component that manages all drag & drop state.
 | `modelValue` | `FreeformItemData[]` | required | Items array (v-model) |
 | `disabled` | `boolean` | `false` | Disable all interactions |
 | `manualReorder` | `boolean` | `false` | Don't auto-reorder, handle `@reorder` manually |
+| `dropZoneId` | `string` | - | Id of the surrounding `FreeformDropZone`, enabling drops from other lists |
 
 ## Events
 
@@ -30,6 +31,8 @@ The main container component that manages all drag & drop state.
 | `drag-end` | `items[]` | Drag operation ended |
 | `drop-into` | `items[], container, accepted` | Items dropped into a container |
 | `reorder` | `fromIndex, toIndex` | Items reordered |
+| `drop` | `DropEventPayload` | Any completed drop - carries `dropType`, indices and target |
+| `drop-to-zone` | `items[], zoneId, index, containerId` | Items dropped into another zone |
 
 ## Slots
 
@@ -52,6 +55,8 @@ Receives state information:
 | `isDragging` | `boolean` | Drag in progress |
 | `dragItems` | `array` | Items being dragged |
 | `dropIndex` | `number` | Where items will drop |
+| `dragSourceIndex` | `number` | Index the drag started from (`-1` for incoming external drops) |
+| `isLassoActive` | `boolean` | Lasso selection in progress |
 
 ### drag-ghost
 
@@ -102,3 +107,34 @@ function handleReorder(fromIndex: number, toIndex: number) {
   items.value.splice(toIndex, 0, item)
 }
 ```
+
+## The `drop` event
+
+`@drop` fires for every completed drop and tells you which kind it was, so you
+can handle reordering, folders and cross-list drops in one place:
+
+```ts
+function onDrop(payload: DropEventPayload) {
+  switch (payload.dropType) {
+    case 'reorder':
+      // payload.fromIndex / payload.toIndex
+      break
+    case 'container':
+      // payload.targetContainer
+      break
+    case 'zone':
+      // payload.targetZoneId / payload.targetContainerId
+      break
+  }
+}
+```
+
+::: tip Event order
+`@drag-end` fires **before** `@drop`. If you need state that gets cleared when
+the drag ends - a hovered grid cell, for example - stash it in `@drag-end` and
+read it in `@drop`.
+:::
+
+Note that `@drop` does not fire for every gesture: a drag that ends without a
+valid target only emits `@drag-end`. Reset drag-related UI state there, not in
+`@drop`.

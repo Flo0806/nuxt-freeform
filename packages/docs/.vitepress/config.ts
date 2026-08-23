@@ -30,6 +30,7 @@ export default defineConfig({
           { text: 'FreeformPlaceholder', link: '/components/freeform-placeholder' },
           { text: 'FreeformSelection', link: '/components/freeform-selection' },
           { text: 'FreeformDropZone', link: '/components/freeform-drop-zone' },
+          { text: 'FreeformGrid', link: '/components/freeform-grid' },
         ],
       },
       {
@@ -38,6 +39,7 @@ export default defineConfig({
           { text: 'Minimal', link: '/examples/minimal' },
           { text: 'File Manager', link: '/examples/file-manager' },
           { text: 'Custom Ghost', link: '/examples/custom-ghost' },
+          { text: 'Grid Desktop', link: '/examples/grid-desktop' },
         ],
       },
       {
