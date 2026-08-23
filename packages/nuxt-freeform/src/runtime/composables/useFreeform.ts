@@ -25,12 +25,6 @@ export interface FreeformContext {
   getVisualIndex: (itemId: string) => number
 }
 
-export interface FreeformContextInternal extends FreeformContext {
-  itemElements: Map<string, HTMLElement>
-  handlePointerMove: (event: PointerEvent) => void
-  handlePointerUp: (event: PointerEvent) => void
-}
-
 // ============================================================================
 // Constants
 // ============================================================================
@@ -209,7 +203,6 @@ export function createFreeformContext() {
     items: [],
     startPosition: null,
     currentPosition: null,
-    offset: null,
     thresholdPassed: false,
   })
 
@@ -272,7 +265,6 @@ export function createFreeformContext() {
       items: itemsToDrag,
       startPosition: startPos,
       currentPosition: startPos,
-      offset: null,
       thresholdPassed: false,
     }
   }
@@ -472,7 +464,6 @@ export function createFreeformContext() {
       items: [],
       startPosition: null,
       currentPosition: null,
-      offset: null,
       thresholdPassed: false,
     }
 
@@ -631,7 +622,6 @@ export function createFreeformContext() {
     currentDropTarget,
     containerElement,
     itemElements,
-    dropZones,
     handlePointerMove,
     handlePointerUp,
     handleExternalDrop,

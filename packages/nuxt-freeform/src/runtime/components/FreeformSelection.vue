@@ -62,7 +62,7 @@ function handleLassoMove(event: PointerEvent) {
   for (const [id, element] of itemElements) {
     if (isElementInRect(element, rect)) {
       const item = items.value.find(i => i.id === id)
-      if (item) {
+      if (item && !item.disabled) {
         foundItems.push(item)
       }
     }

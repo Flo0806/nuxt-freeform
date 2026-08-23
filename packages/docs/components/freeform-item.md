@@ -111,3 +111,19 @@ Without a custom slot, items get default styling:
 - **Container (drop target)**: Green or red ring based on `accepted`
 
 Override by providing a custom slot template.
+
+## Disabled items
+
+Set `disabled` on the item itself to take it out of dragging and lasso
+selection - useful for locked or read-only entries:
+
+```ts
+const items = ref([
+  { id: '1', name: 'Report.docx' },
+  { id: '2', name: 'System', disabled: true },
+])
+```
+
+The item still renders normally; style it via the `freeform-item--disabled`
+class or the `disabled` state in your own template. The component's own
+`disabled` prop does the same thing for a single instance.

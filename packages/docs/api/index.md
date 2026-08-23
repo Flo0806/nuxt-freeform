@@ -11,8 +11,9 @@ Base interface for all items:
 ```ts
 interface FreeformItemData {
   id: string
+  /** `'container'` turns the item into a drop target for other items */
   type?: 'item' | 'container'
-  position?: { x: number, y: number }
+  /** Excludes the item from dragging and lasso selection */
   disabled?: boolean
 }
 ```
@@ -55,7 +56,6 @@ interface DragState<T extends FreeformItemData> {
   items: T[]
   startPosition: Position | null
   currentPosition: Position | null
-  offset: Position | null
   thresholdPassed: boolean
 }
 ```

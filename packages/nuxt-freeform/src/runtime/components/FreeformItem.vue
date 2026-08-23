@@ -33,6 +33,9 @@ onUnmounted(() => {
   }
 })
 
+/** Either the prop or the item's own flag disables interaction */
+const isDisabled = computed(() => props.disabled || props.item.disabled === true)
+
 const isSelected = computed(() =>
   context.selectionState.value.items.some((i: FreeformItemData) => i.id === props.item.id),
 )
@@ -73,7 +76,7 @@ function isFromHandle(event: PointerEvent): boolean {
 }
 
 function onPointerDown(event: PointerEvent) {
-  if (props.disabled) return
+  if (isDisabled.value) return
 
   // Stop propagation so container doesn't start lasso
   event.stopPropagation()
@@ -93,7 +96,7 @@ function onPointerDown(event: PointerEvent) {
 }
 
 function onClick(event: MouseEvent) {
-  if (props.disabled) return
+  if (isDisabled.value) return
 
   // If a drag happened, don't change selection
   if (context.dragState.value.thresholdPassed) return
@@ -115,7 +118,7 @@ function onClick(event: MouseEvent) {
     :class="{
       'freeform-item--selected': isSelected,
       'freeform-item--dragging': isDragging,
-      'freeform-item--disabled': disabled,
+      'freeform-item--disabled': isDisabled,
       'freeform-item--container': isContainer,
       'freeform-item--drop-target': isDropTarget,
       'freeform-item--drop-accepted': isDropAccepted,
